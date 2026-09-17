@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+html, body { background: #09090B; color: #EDEDED; font-size: 14px; }
+* { -webkit-font-smoothing: antialiased; }
+
+input, select, textarea { color-scheme: dark; }
+
+.inp {
+  width: 100%;
+  background: #17171A;
+  border: 1px solid #1F1F23;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s;
+}
+.inp:focus { border-color: #FF6FA5; }
+
+.btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary { background: #FF6FA5; color: white; }
+.btn-primary:hover { background: #ff5895; }
+.btn-secondary { background: #17171A; color: #EDEDED; border: 1px solid #1F1F23; }
+.btn-secondary:hover { background: #1F1F23; }
+.btn-danger { background: #7f1d1d33; color: #f87171; border: 1px solid #7f1d1d66; }
+.btn-danger:hover { background: #7f1d1d66; }
+/* Кастомный скроллбар — тёмная тема */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2A2A2F;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3A3A42;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2A2A2F transparent;
+}

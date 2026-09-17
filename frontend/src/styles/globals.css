@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { background: #FFF8FB; color: #1A1A1A; }
+* { -webkit-font-smoothing: antialiased; }
+html, body { overflow-x: hidden; }
+
+body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+body img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+.allow-select,
+.allow-select * {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 182, 213, 0.4);
+}
+
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #FF6FA5, #E84D8A);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation-name: marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+.modal-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 111, 165, 0.25);
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 111, 165, 0.5);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.modal-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 111, 165, 0.3);
+  border-radius: 6px;
+}
+.modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 111, 165, 0.55);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 111, 165, 0.3) transparent;
+}
+
+/* ===== 3D-голова скина (чистый CSS) ===== */
+.mc-head {
+  perspective: 260px;
+}
+.mc-head-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(-12deg) rotateY(-24deg);
+  transition: transform .6s cubic-bezier(.22, 1, .36, 1);
+}
+.mc-head:hover .mc-head-inner {
+  transform: rotateX(-6deg) rotateY(20deg);
+}
+.mc-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: rgba(255, 182, 213, 0.35); /* если скин не загрузился */
+  backface-visibility: hidden;
+}

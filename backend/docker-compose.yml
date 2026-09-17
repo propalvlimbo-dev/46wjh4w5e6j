@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: elytrix
+      POSTGRES_USER: elytrix
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  backend:
+    build: .
+    restart: always
+    environment:
+      ANYPAY_MERCHANT_ID: ${ANYPAY_MERCHANT_ID}
+      ANYPAY_PROJECT_SECRET: ${ANYPAY_PROJECT_SECRET}
+      ANYPAY_API_ID: ${ANYPAY_API_ID}
+      ANYPAY_API_KEY: ${ANYPAY_API_KEY}
+      SITE_URL: ${SITE_URL}
+      DB_DSN: postgres://elytrix:${DB_PASSWORD}@postgres:5432/elytrix?sslmode=disable
+      REDIS_ADDR: redis:6379
+      REDIS_PASS: ${REDIS_PASSWORD}
+      ADMIN_PASSWORD_HASH: "$$2a$$12$$pn2ijau2MjsaS/oMEd7YQOiVqE5wcBp06iyOzaY7JsJRTHyYOnYPq"
+      ADMIN_PATH: /safdjuhos8dfuahj
+      JWT_SECRET: '913cc77f27f9a5e5c51247d40efaadff683573baf22ef6f9a21e9592444bfd1d'
+      PLUGIN_URL: http://c6.play2go.cloud:20559
+      PLUGIN_SECRET: '35a4b5fac4473d4e0228e37a8eeec12e5c5ccdb66da8ddc1e121caad195a37f9'
+      PORT: 8080
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - postgres
+      - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  pgdata:
