@@ -70,6 +70,9 @@ func normalizeCardCurrency(method, cur string) string {
 // rawString приводит json.RawMessage (может прийти числом или строкой) к строке.
 func rawString(r json.RawMessage) string {
 	s := strings.TrimSpace(string(r))
+	if s == "" || s == "null" {
+		return ""
+	}
 	return strings.Trim(s, `"`)
 }
 
@@ -141,7 +144,7 @@ func anypayCreatePayment(cfg *config.Config, payID, amount, currency, desc, emai
 		return "", "", nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "https://anypay.io/api/create-payment/"+cfg.AnyPayAPIID, &buf)
+	req, err := http.NewRequest(http.MethodPost, anypayAPIBase(cfg)+"/create-payment/"+url.PathEscape(cfg.AnyPayAPIID), &buf)
 	if err != nil {
 		return "", "", nil, err
 	}
@@ -389,55 +392,111 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 	}
 }
 
-// fulfillPendingOrder — переводит pending-заказ в paid и выдаёт награду плагину.
-// Идемпотентна и защищена от гонок: блокировка FOR UPDATE внутри транзакции
-// гарантирует, что награда выдаётся ровно один раз.
+func productOptionColumnExists(ctx context.Context, tx pgx.Tx, column string) bool {
+	var ok bool
+	err := tx.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_schema = current_schema()
+			  AND table_name = 'product_options'
+			  AND column_name = $1
+		)`, column).Scan(&ok)
+	if err != nil {
+		fmt.Println("!!! product_options column check failed:", column, "err:", err)
+		return false
+	}
+	return ok
+}
+
+func productOptionIntExpr(ctx context.Context, tx pgx.Tx, columns []string, fallback string) string {
+	for _, col := range columns {
+		if productOptionColumnExists(ctx, tx, col) {
+			return "COALESCE(po." + col + ",0)"
+		}
+	}
+	return fallback
+}
+
+func productOptionTextExpr(ctx context.Context, tx pgx.Tx, columns []string, fallback string) string {
+	for _, col := range columns {
+		if productOptionColumnExists(ctx, tx, col) {
+			return "COALESCE(po." + col + ",'')"
+		}
+	}
+	return fallback
+}
+
+func productOptionDurationExprs(ctx context.Context, tx pgx.Tx) (daysExpr, hoursExpr, durExpr string) {
+	return productOptionIntExpr(ctx, tx, []string{"days"}, "0"),
+		productOptionIntExpr(ctx, tx, []string{"duration_hours", "hours"}, "0"),
+		productOptionTextExpr(ctx, tx, []string{"dur"}, "''")
+}
+
+// fulfillPendingOrder переводит pending-заказ в paid и пытается выдать награду.
+// Идемпотентна: pending -> paid -> issued, paid можно вызывать повторно до выдачи,
+// issued считается успешным no-op. FOR UPDATE держим до ответа плагина, чтобы не
+// отправить одну покупку дважды при гонке callback/verify/sweeper.
 func fulfillPendingOrder(cfg *config.Config, orderID, transactionID string) bool {
 	ctx := context.Background()
 	tx, err := db.Pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
+		fmt.Println("!!! fulfill begin tx failed: order:", orderID, "err:", err)
 		return false
 	}
 	defer tx.Rollback(ctx)
 
+	daysExpr, hoursExpr, durExpr := productOptionDurationExprs(ctx, tx)
+
 	var currentStatus, playerName, commands, promoCode string
-	// команды варианта оплаты (если заданы), иначе общие команды товара;
-	// %days% заменяется на длительность варианта (если она указана)
 	var optDays, optHours int
 	var optDur string
-	err = tx.QueryRow(ctx,
-		`SELECT o.status, o.player_name, COALESCE(NULLIF(po.commands,''), p.commands), o.promo_code,
-		        COALESCE(po.days,0), COALESCE(po.duration_hours,0), COALESCE(po.dur,'')
+	query := `SELECT o.status, o.player_name, COALESCE(NULLIF(po.commands,''), p.commands), o.promo_code,
+		        ` + daysExpr + `, ` + hoursExpr + `, ` + durExpr + `
 		 FROM orders o
 		 JOIN products p ON p.id=o.product_id
 		 LEFT JOIN product_options po ON po.id=o.option_id
-		 WHERE o.id=$1 FOR UPDATE`, orderID).
-		Scan(&currentStatus, &playerName, &commands, &promoCode, &optDays, &optHours, &optDur)
+		 WHERE o.id=$1 FOR UPDATE`
+	err = tx.QueryRow(ctx, query, orderID).Scan(&currentStatus, &playerName, &commands, &promoCode, &optDays, &optHours, &optDur)
 	if err != nil {
-		return false
-	}
-	if currentStatus != "pending" {
+		fmt.Println("!!! fulfill order load failed: order:", orderID, "err:", err)
 		return false
 	}
 
-	if transactionID != "" {
+	if currentStatus == "issued" {
+		return true
+	}
+	if currentStatus != "pending" && currentStatus != "paid" {
+		fmt.Println("!!! fulfill rejected by status: order:", orderID, "status:", currentStatus)
+		return false
+	}
+
+	if currentStatus == "pending" {
+		if transactionID != "" {
+			if _, err := tx.Exec(ctx,
+				`UPDATE orders SET status='paid', paid_at=NOW(), payment_id=$2 WHERE id=$1`, orderID, transactionID); err != nil {
+				fmt.Println("!!! fulfill mark paid failed: order:", orderID, "err:", err)
+				return false
+			}
+		} else {
+			if _, err := tx.Exec(ctx,
+				`UPDATE orders SET status='paid', paid_at=NOW() WHERE id=$1`, orderID); err != nil {
+				fmt.Println("!!! fulfill mark paid failed: order:", orderID, "err:", err)
+				return false
+			}
+		}
+
+		if promoCode != "" {
+			if _, err := tx.Exec(ctx, `UPDATE promocodes SET used=used+1 WHERE code=$1`, promoCode); err != nil {
+				fmt.Println("!!! fulfill promo increment failed: order:", orderID, "promo:", promoCode, "err:", err)
+			}
+		}
+	} else if transactionID != "" {
 		if _, err := tx.Exec(ctx,
-			`UPDATE orders SET status='paid', paid_at=NOW(), payment_id=$2 WHERE id=$1`, orderID, transactionID); err != nil {
+			`UPDATE orders SET payment_id=$2 WHERE id=$1 AND COALESCE(payment_id,'')=''`, orderID, transactionID); err != nil {
+			fmt.Println("!!! fulfill payment_id update failed: order:", orderID, "err:", err)
 			return false
 		}
-	} else {
-		if _, err := tx.Exec(ctx,
-			`UPDATE orders SET status='paid', paid_at=NOW() WHERE id=$1`, orderID); err != nil {
-			return false
-		}
-	}
-
-	if promoCode != "" {
-		tx.Exec(ctx, `UPDATE promocodes SET used=used+1 WHERE code=$1`, promoCode)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return false
 	}
 
 	// плейсхолдеры длительности варианта: %days%, %hours% и %dur% (готовый
@@ -451,16 +510,34 @@ func fulfillPendingOrder(cfg *config.Config, orderID, transactionID string) bool
 	if strings.Contains(commands, "%dur%") {
 		commands = strings.ReplaceAll(commands, "%dur%", optDur)
 	}
+
 	_, pStatus, perr := plugin.RequestJSON(cfg.PluginURL, cfg.PluginSecret, "/api/complete-order",
 		map[string]string{
 			"id":       orderID,
 			"player":   playerName,
 			"commands": commands,
 		})
-	if perr == nil && pStatus == 200 {
-		db.Pool.Exec(ctx, `UPDATE orders SET status='issued', issued_at=NOW() WHERE id=$1 AND status='paid'`, orderID)
-	} else {
-		fmt.Println("!!! plugin error:", perr, "status:", pStatus, "order:", orderID)
+	if perr != nil || pStatus != 200 {
+		fmt.Println("!!! plugin issue failed: order:", orderID, "status:", pStatus, "err:", perr)
+		if err := tx.Commit(ctx); err != nil {
+			fmt.Println("!!! fulfill commit paid-after-plugin-fail failed: order:", orderID, "err:", err)
+			return false
+		}
+		return true
+	}
+
+	res, err := tx.Exec(ctx, `UPDATE orders SET status='issued', issued_at=NOW() WHERE id=$1 AND status='paid'`, orderID)
+	if err != nil {
+		fmt.Println("!!! fulfill mark issued failed: order:", orderID, "err:", err)
+		return false
+	}
+	if res.RowsAffected() == 0 {
+		fmt.Println("!!! fulfill mark issued skipped: order:", orderID, "status changed before update")
+		return false
+	}
+	if err := tx.Commit(ctx); err != nil {
+		fmt.Println("!!! fulfill commit failed: order:", orderID, "err:", err)
+		return false
 	}
 	return true
 }
@@ -525,7 +602,7 @@ func PaymentCallback(cfg *config.Config) fiber.Handler {
 			return c.Status(404).SendString("order not found")
 		}
 
-		if currentStatus == "paid" || currentStatus == "issued" {
+		if currentStatus == "issued" {
 			return c.SendString("OK")
 		}
 
@@ -534,6 +611,19 @@ func PaymentCallback(cfg *config.Config) fiber.Handler {
 			fmt.Println("!!! callback: amount mismatch. got:", amount, "expected:", price)
 			return c.Status(403).SendString("bad amount")
 		}
+
+		// API-проверка только для лога: подпись callback + совпавшая сумма уже достаточны,
+		// поэтому AnyPay API не должен блокировать выдачу.
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			ap, err := anypayPayStatus(ctx, cfg, payID)
+			if err != nil {
+				fmt.Println("!!! callback anypay best-effort status failed: pay_id:", payID, "err:", err)
+				return
+			}
+			fmt.Println("callback anypay best-effort: pay_id:", payID, "status:", ap.Status, "tx:", ap.TransactionID)
+		}()
 
 		fulfillPendingOrder(cfg, orderID, transactionID)
 		return c.SendString("OK")

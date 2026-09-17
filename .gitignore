@@ -1,0 +1,27 @@
+# secrets / local env
+.env
+.env.*
+*.env
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+admin/.env
+admin/.env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+!admin/.env.example
+
+# dependencies
+node_modules/
+*/node_modules/
+
+# builds / caches
+.next/
+out/
+dist/
+build/
+coverage/
+*.log
+.DS_Store

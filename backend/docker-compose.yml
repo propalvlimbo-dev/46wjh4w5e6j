@@ -26,6 +26,7 @@ services:
       ANYPAY_PROJECT_SECRET: ${ANYPAY_PROJECT_SECRET}
       ANYPAY_API_ID: ${ANYPAY_API_ID}
       ANYPAY_API_KEY: ${ANYPAY_API_KEY}
+      ANYPAY_API_URL: ${ANYPAY_API_URL:-https://anypay.io/api}
       SITE_URL: ${SITE_URL}
       DB_DSN: postgres://elytrix:${DB_PASSWORD}@postgres:5432/elytrix?sslmode=disable
       REDIS_ADDR: redis:6379

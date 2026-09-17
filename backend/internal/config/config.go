@@ -17,7 +17,15 @@ type Config struct {
 	AnyPayProjectSecret string
 	AnyPayAPIID         string
 	AnyPayAPIKey        string
+	AnyPayAPIURL        string
 	SiteURL             string
+}
+
+func getenvDefault(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }
 
 func Load() *Config {
@@ -36,6 +44,7 @@ func Load() *Config {
 		AnyPayProjectSecret: os.Getenv("ANYPAY_PROJECT_SECRET"),
 		AnyPayAPIID:         os.Getenv("ANYPAY_API_ID"),
 		AnyPayAPIKey:        os.Getenv("ANYPAY_API_KEY"),
+		AnyPayAPIURL:        getenvDefault("ANYPAY_API_URL", "https://anypay.io/api"),
 		SiteURL:             os.Getenv("SITE_URL"),
 	}
 }

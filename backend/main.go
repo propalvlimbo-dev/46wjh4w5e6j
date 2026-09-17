@@ -19,6 +19,7 @@ func main() {
 		log.Fatal(err)
 	}
 	redis.Init(cfg.RedisAddr, cfg.RedisPass)
+	handlers.StartPendingSweeper(cfg)
 
 	app := fiber.New(fiber.Config{BodyLimit: 1024 * 1024, DisableStartupMessage: true})
 
