@@ -26,7 +26,7 @@ func VerifyPayment(cfg *config.Config) fiber.Handler {
 
 		switch status {
 		case "pending":
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			ap, err := anypayPayStatus(ctx, cfg, payID)
 			cancel()
 			if err != nil {
@@ -49,6 +49,13 @@ func VerifyPayment(cfg *config.Config) fiber.Handler {
 			if !ok {
 				return c.Status(404).JSON(fiber.Map{"error": "not found"})
 			}
+		}
+
+		// Callback мог провести заказ, пока verify ждал медленный AnyPay API.
+		// Перед ответом всегда перечитываем состояние, чтобы фронт не висел в pending.
+		orderID, status, player, product, price, paymentID, ok = orderByAnyPayID(payID)
+		if !ok {
+			return c.Status(404).JSON(fiber.Map{"error": "not found"})
 		}
 
 		_ = orderID

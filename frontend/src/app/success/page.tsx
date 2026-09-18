@@ -16,26 +16,43 @@ function SuccessInner() {
   useEffect(() => {
     if (!orderID && !payID) { setState({ loading: false }); return }
     let stop = false
+    let verifyBusy = false
+    let lastVerify = 0
     const q = orderID ? `order=${orderID}` : `pay_id=${payID}`
-    const apply = (d: any) => { if (!stop) { statusRef.current = d?.status || ''; setState({ ...d, loading: false }) } }
+    const done = (s?: string) => s === 'issued' || s === 'paid'
+    const apply = (d: any) => {
+      if (stop) return
+      const next = d?.status || ''
+      // Не откатываем UI назад, если медленный verify вернул старый pending
+      // после того, как status уже увидел issued/paid.
+      if (done(statusRef.current) && next === 'pending') return
+      statusRef.current = next
+      setState({ ...d, loading: false })
+    }
     const load = () => {
-      fetch(`/api/payment/status?${q}`)
+      fetch(`/api/payment/status?${q}`, { cache: 'no-store' })
         .then(r => r.json())
         .then(apply)
         .catch(() => { if (!stop) setState({ loading: false }) })
     }
-    // Активная проверка: бэкенд сам спросит у AnyPay, оплачен ли платёж,
-    // и сразу проведёт заказ — не дожидаясь медленного колбэка
+    // Verify — только запасной путь, если callback задержался. Статус БД
+    // опрашиваем всегда, чтобы экран не зависел от медленного AnyPay API.
     const verify = () => {
-      fetch(`/api/payment/verify?pay_id=${payID}`)
+      const now = Date.now()
+      if (!payID || verifyBusy || done(statusRef.current) || now - lastVerify < 15000) return
+      verifyBusy = true
+      lastVerify = now
+      fetch(`/api/payment/verify?pay_id=${payID}`, { cache: 'no-store' })
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d && d.status) apply(d) })
+        .then(d => { if (d && d.status) apply(d); load() })
         .catch(() => {})
+        .finally(() => { verifyBusy = false })
     }
     load()
+    verify()
     const i = setInterval(() => {
-      if ((statusRef.current === 'pending' || !statusRef.current) && payID) verify()
-      else load()
+      load()
+      if (statusRef.current === 'pending' || !statusRef.current) verify()
     }, 3000)
     return () => { stop = true; clearInterval(i) }
   }, [orderID, payID])
