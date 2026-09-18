@@ -456,7 +456,7 @@ func fulfillPendingOrder(cfg *config.Config, orderID, transactionID string) bool
 		 FROM orders o
 		 JOIN products p ON p.id=o.product_id
 		 LEFT JOIN product_options po ON po.id=o.option_id
-		 WHERE o.id=$1 FOR UPDATE`
+		 WHERE o.id=$1 FOR UPDATE OF o`
 	err = tx.QueryRow(ctx, query, orderID).Scan(&currentStatus, &playerName, &commands, &promoCode, &optDays, &optHours, &optDur)
 	if err != nil {
 		fmt.Println("!!! fulfill order load failed: order:", orderID, "err:", err)
