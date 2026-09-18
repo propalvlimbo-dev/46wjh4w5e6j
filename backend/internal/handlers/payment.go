@@ -373,7 +373,6 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 			paymentURL = "https://anypay.io/merchant?" + params.Encode()
 
 			fmt.Println("=== AnyPay SCI ===")
-			fmt.Println("Sign string:", signStr)
 			fmt.Println("URL:", paymentURL)
 			fmt.Println("==================")
 		}
