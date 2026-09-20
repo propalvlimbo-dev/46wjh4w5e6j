@@ -438,26 +438,39 @@ func buildCoinsCommand(cfg *config.Config, player string, coins int) string {
 
 	coinValue := strconv.Itoa(coins)
 	coinText := fmt.Sprintf("%d Коинов", coins)
-	repl := map[string]string{
-		"%player%":     player,
-		"{player}":     player,
-		"%coin%":       coinValue,
-		"{coin}":       coinValue,
-		"%coins%":      coinValue,
-		"{coins}":      coinValue,
-		"%amount%":     coinValue,
-		"{amount}":     coinValue,
-		"%coins_text%": coinText,
-		"{coins_text}": coinText,
+	render := func(command string) string {
+		coinReplacement := coinValue
+		if strings.Contains(strings.ToLower(command), "fmda send") {
+			coinReplacement = coinText
+		}
+		repl := map[string]string{
+			"%player%":     player,
+			"{player}":     player,
+			"%coin%":       coinReplacement,
+			"{coin}":       coinReplacement,
+			"%coins%":      coinReplacement,
+			"{coins}":      coinReplacement,
+			"%amount%":     coinValue,
+			"{amount}":     coinValue,
+			"%coins_text%": coinText,
+			"{coins_text}": coinText,
+		}
+		for k, v := range repl {
+			command = strings.ReplaceAll(command, k, v)
+		}
+		return command
 	}
-	for k, v := range repl {
-		tpl = strings.ReplaceAll(tpl, k, v)
+
+	parts := strings.Split(tpl, ";")
+	for i, part := range parts {
+		parts[i] = render(part)
 	}
+	tpl = strings.Join(parts, ";")
 	if !strings.Contains(strings.ToLower(tpl), "fmda send") {
 		if tpl != "" {
 			tpl += ";"
 		}
-		tpl += fmt.Sprintf("fmda send %s %s", player, coinValue)
+		tpl += fmt.Sprintf("fmda send %s %s", player, coinText)
 	}
 	return tpl
 }
