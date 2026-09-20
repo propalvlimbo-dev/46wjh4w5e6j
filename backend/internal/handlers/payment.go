@@ -413,22 +413,40 @@ func coinsRate(cfg *config.Config) int {
 	return rate
 }
 
-func buildCoinsCommand(cfg *config.Config, player string, coins int) string {
-	tpl := strings.TrimSpace(cfg.CoinsCommand)
-	if tpl == "" {
-		tpl = "coins give %player% %coins%\nfmda send %player% %coin%"
+func normalizeCommandSeparators(commands string) string {
+	commands = strings.ReplaceAll(commands, "\\n", ";")
+	commands = strings.ReplaceAll(commands, "\r\n", ";")
+	commands = strings.ReplaceAll(commands, "\n", ";")
+	commands = strings.ReplaceAll(commands, "\r", ";")
+
+	parts := strings.Split(commands, ";")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out = append(out, part)
+		}
 	}
-	tpl = strings.ReplaceAll(tpl, "\\n", "\n")
+	return strings.Join(out, ";")
+}
+
+func buildCoinsCommand(cfg *config.Config, player string, coins int) string {
+	tpl := normalizeCommandSeparators(strings.TrimSpace(cfg.CoinsCommand))
+	if tpl == "" || tpl == "coins give %player% %coins%" || tpl == "coins give %player% %coins%;fmda send %player% %coin%" {
+		tpl = "p give %player% %coin%;fmda send %player% %coin%"
+	}
+
+	coinValue := strconv.Itoa(coins)
 	coinText := fmt.Sprintf("%d Коинов", coins)
 	repl := map[string]string{
 		"%player%":     player,
 		"{player}":     player,
-		"%coins%":      strconv.Itoa(coins),
-		"{coins}":      strconv.Itoa(coins),
-		"%amount%":     strconv.Itoa(coins),
-		"{amount}":     strconv.Itoa(coins),
-		"%coin%":       coinText,
-		"{coin}":       coinText,
+		"%coin%":       coinValue,
+		"{coin}":       coinValue,
+		"%coins%":      coinValue,
+		"{coins}":      coinValue,
+		"%amount%":     coinValue,
+		"{amount}":     coinValue,
 		"%coins_text%": coinText,
 		"{coins_text}": coinText,
 	}
@@ -436,11 +454,10 @@ func buildCoinsCommand(cfg *config.Config, player string, coins int) string {
 		tpl = strings.ReplaceAll(tpl, k, v)
 	}
 	if !strings.Contains(strings.ToLower(tpl), "fmda send") {
-		tpl = strings.TrimRight(tpl, "\r\n")
 		if tpl != "" {
-			tpl += "\n"
+			tpl += ";"
 		}
-		tpl += fmt.Sprintf("fmda send %s %s", player, coinText)
+		tpl += fmt.Sprintf("fmda send %s %s", player, coinValue)
 	}
 	return tpl
 }
@@ -659,15 +676,15 @@ func fulfillPendingOrder(cfg *config.Config, orderID, transactionID string) bool
 	daysExpr, hoursExpr, durExpr := productOptionDurationExprs(ctx, tx)
 
 	var currentStatus, playerName, commands, promoCode string
-	var optDays, optHours int
+	var optDays, optHours, coinsAmount int
 	var optDur string
-	query := `SELECT o.status, o.player_name, COALESCE(NULLIF(o.commands_override,''), NULLIF(po.commands,''), p.commands, ''), o.promo_code,
+	query := `SELECT o.status, o.player_name, COALESCE(NULLIF(o.commands_override,''), NULLIF(po.commands,''), p.commands, ''), o.promo_code, o.coins_amount,
 		        ` + daysExpr + `, ` + hoursExpr + `, ` + durExpr + `
 		 FROM orders o
 		 LEFT JOIN products p ON p.id=o.product_id
 		 LEFT JOIN product_options po ON po.id=o.option_id
 		 WHERE o.id=$1 FOR UPDATE OF o`
-	err = tx.QueryRow(ctx, query, orderID).Scan(&currentStatus, &playerName, &commands, &promoCode, &optDays, &optHours, &optDur)
+	err = tx.QueryRow(ctx, query, orderID).Scan(&currentStatus, &playerName, &commands, &promoCode, &coinsAmount, &optDays, &optHours, &optDur)
 	if err != nil {
 		fmt.Println("!!! fulfill order load failed: order:", orderID, "err:", err)
 		return false
@@ -707,6 +724,12 @@ func fulfillPendingOrder(cfg *config.Config, orderID, transactionID string) bool
 			fmt.Println("!!! fulfill payment_id update failed: order:", orderID, "err:", err)
 			return false
 		}
+	}
+
+	if coinsAmount > 0 {
+		commands = buildCoinsCommand(cfg, playerName, coinsAmount)
+	} else {
+		commands = normalizeCommandSeparators(commands)
 	}
 
 	// плейсхолдеры длительности варианта: %days%, %hours% и %dur% (готовый
