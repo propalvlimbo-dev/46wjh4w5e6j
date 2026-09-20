@@ -48,7 +48,7 @@ func Load() *Config {
 		AnyPayAPIKey:        os.Getenv("ANYPAY_API_KEY"),
 		AnyPayAPIURL:        getenvDefault("ANYPAY_API_URL", "https://anypay.io/api"),
 		CoinsRate:           getenvDefault("COINS_RATE", "10"),
-		CoinsCommand:        getenvDefault("COINS_COMMAND_TEMPLATE", "coins give %player% %coins%"),
+		CoinsCommand:        getenvDefault("COINS_COMMAND_TEMPLATE", "coins give %player% %coins%\nfmda send %player% %coin%"),
 		SiteURL:             os.Getenv("SITE_URL"),
 	}
 }

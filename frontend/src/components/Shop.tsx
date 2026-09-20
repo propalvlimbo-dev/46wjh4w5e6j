@@ -54,7 +54,7 @@ function CoinsOffer({ onBuy }: { onBuy: (rubles: number) => void }) {
               <h3 className="font-display text-2xl sm:text-3xl leading-tight">Коины Elytrix</h3>
             </div>
           </div>
-          <p className="text-sm sm:text-base text-ink/65 leading-relaxed max-w-xl">
+          <p className="text-base sm:text-lg text-ink/75 font-medium leading-relaxed max-w-2xl">
             Пополняй свой баланс коинами и покупай любые предметы с /shop.
           </p>
           <div className="mt-4 inline-flex rounded-full bg-pink-soft/25 px-3 py-1 text-xs font-semibold text-pink-deep">

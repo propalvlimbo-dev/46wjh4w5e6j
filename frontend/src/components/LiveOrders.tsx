@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { Coins } from 'lucide-react'
 
 type Order = { player: string; product: string; image: string; time: string }
 
@@ -13,6 +14,18 @@ function timeAgo(iso: string) {
   const h = Math.floor(m / 60)
   if (h < 24) return h + ' ч назад'
   return Math.floor(h / 24) + ' дн назад'
+}
+
+function isCoinOrder(o: Order) {
+  return !o.image && /^Коины(\s|$|·)/i.test(o.product || '')
+}
+
+function CoinThumb() {
+  return (
+    <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-xl mb-2 bg-gradient-to-br from-pink to-pink-deep text-white flex items-center justify-center shadow-lg shadow-pink/25">
+      <Coins size={28} strokeWidth={2.4} />
+    </div>
+  )
 }
 
 export default function LiveOrders() {
@@ -41,7 +54,11 @@ export default function LiveOrders() {
               <div key={k} className="flex gap-4 pr-4 shrink-0">
                 {list.map((o, i) => (
                   <div key={i} className="glass rounded-2xl p-3 sm:p-4 min-w-[170px] w-[170px] sm:min-w-[200px] sm:w-[200px] text-center shrink-0">
-                    <img src={o.image || '/images/placeholder.png'} className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-xl mb-2 object-cover" />
+                    {isCoinOrder(o) ? (
+                      <CoinThumb />
+                    ) : (
+                      <img src={o.image || '/images/placeholder.png'} className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-xl mb-2 object-cover" />
+                    )}
                     <div className="font-semibold text-sm truncate">{o.player}</div>
                     <div className="text-xs text-ink/60 truncate">{o.product}</div>
                     <div className="text-[11px] text-pink mt-1 font-medium">{timeAgo(o.time)}</div>

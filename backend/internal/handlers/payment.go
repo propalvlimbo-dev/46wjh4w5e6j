@@ -408,7 +408,7 @@ func validMinecraftName(name string) bool {
 func coinsRate(cfg *config.Config) int {
 	rate, err := strconv.Atoi(strings.TrimSpace(cfg.CoinsRate))
 	if err != nil || rate <= 0 {
-		return 5
+		return 10
 	}
 	return rate
 }
@@ -416,18 +416,31 @@ func coinsRate(cfg *config.Config) int {
 func buildCoinsCommand(cfg *config.Config, player string, coins int) string {
 	tpl := strings.TrimSpace(cfg.CoinsCommand)
 	if tpl == "" {
-		tpl = "coins give %player% %coins%"
+		tpl = "coins give %player% %coins%\nfmda send %player% %coin%"
 	}
+	tpl = strings.ReplaceAll(tpl, "\\n", "\n")
+	coinText := fmt.Sprintf("%d Коинов", coins)
 	repl := map[string]string{
-		"%player%": player,
-		"{player}": player,
-		"%coins%":  strconv.Itoa(coins),
-		"{coins}":  strconv.Itoa(coins),
-		"%amount%": strconv.Itoa(coins),
-		"{amount}": strconv.Itoa(coins),
+		"%player%":     player,
+		"{player}":     player,
+		"%coins%":      strconv.Itoa(coins),
+		"{coins}":      strconv.Itoa(coins),
+		"%amount%":     strconv.Itoa(coins),
+		"{amount}":     strconv.Itoa(coins),
+		"%coin%":       coinText,
+		"{coin}":       coinText,
+		"%coins_text%": coinText,
+		"{coins_text}": coinText,
 	}
 	for k, v := range repl {
 		tpl = strings.ReplaceAll(tpl, k, v)
+	}
+	if !strings.Contains(strings.ToLower(tpl), "fmda send") {
+		tpl = strings.TrimRight(tpl, "\r\n")
+		if tpl != "" {
+			tpl += "\n"
+		}
+		tpl += fmt.Sprintf("fmda send %s %s", player, coinText)
 	}
 	return tpl
 }
