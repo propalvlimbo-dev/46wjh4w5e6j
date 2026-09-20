@@ -258,8 +258,8 @@ _, status, perr := plugin.RequestJSON(cfg.PluginURL, cfg.PluginSecret, "/api/com
 
 func LastOrders(c *fiber.Ctx) error {
 	rows, err := db.Pool.Query(context.Background(),
-		`SELECT o.player_name,p.name,p.image,o.created_at FROM orders o
-		 JOIN products p ON p.id=o.product_id
+		`SELECT o.player_name,COALESCE(NULLIF(o.product_name,''),p.name,'Товар удалён'),COALESCE(p.image,''),o.created_at FROM orders o
+		 LEFT JOIN products p ON p.id=o.product_id
 		 WHERE o.status IN ('paid','issued')
 		 ORDER BY o.created_at DESC LIMIT 15`)
 	if err != nil {

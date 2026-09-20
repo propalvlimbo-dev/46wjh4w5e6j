@@ -101,6 +101,8 @@ func migrate() error {
 	);
 	ALTER TABLE orders ADD COLUMN IF NOT EXISTS option_id INT;
 	ALTER TABLE orders ADD COLUMN IF NOT EXISTS option_label TEXT DEFAULT '';
+	ALTER TABLE orders ADD COLUMN IF NOT EXISTS commands_override TEXT DEFAULT '';
+	ALTER TABLE orders ADD COLUMN IF NOT EXISTS coins_amount INT NOT NULL DEFAULT 0;
 	DO $$ BEGIN
 		IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='product_periods') THEN
 			INSERT INTO product_options(product_id,label,price,commands,days,sort)

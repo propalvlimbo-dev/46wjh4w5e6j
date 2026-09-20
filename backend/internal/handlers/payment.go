@@ -391,6 +391,204 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 	}
 }
 
+
+func validMinecraftName(name string) bool {
+	if len(name) < 3 || len(name) > 16 {
+		return false
+	}
+	for _, r := range name {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func coinsRate(cfg *config.Config) int {
+	rate, err := strconv.Atoi(strings.TrimSpace(cfg.CoinsRate))
+	if err != nil || rate <= 0 {
+		return 5
+	}
+	return rate
+}
+
+func buildCoinsCommand(cfg *config.Config, player string, coins int) string {
+	tpl := strings.TrimSpace(cfg.CoinsCommand)
+	if tpl == "" {
+		tpl = "coins give %player% %coins%"
+	}
+	repl := map[string]string{
+		"%player%": player,
+		"{player}": player,
+		"%coins%":  strconv.Itoa(coins),
+		"{coins}":  strconv.Itoa(coins),
+		"%amount%": strconv.Itoa(coins),
+		"{amount}": strconv.Itoa(coins),
+	}
+	for k, v := range repl {
+		tpl = strings.ReplaceAll(tpl, k, v)
+	}
+	return tpl
+}
+
+func CreateCoinsPayment(cfg *config.Config) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var body struct {
+			Player         string `json:"player"`
+			Amount         int    `json:"amount"`
+			Method         string `json:"method"`
+			MethodCurrency string `json:"method_currency"`
+		}
+		if err := c.BodyParser(&body); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "bad body"})
+		}
+
+		method, merr := normalizeMethod(body.Method)
+		if merr != nil {
+			return c.Status(400).JSON(fiber.Map{"error": merr.Error()})
+		}
+		methodCurrency := normalizeCardCurrency(method, body.MethodCurrency)
+
+		body.Player = strings.TrimSpace(body.Player)
+		if !validMinecraftName(body.Player) {
+			return c.Status(400).JSON(fiber.Map{"error": "invalid name"})
+		}
+		if body.Amount < 1 || body.Amount > 6000 {
+			return c.Status(400).JSON(fiber.Map{"error": "Сумма должна быть от 1 до 6000 ₽"})
+		}
+
+		if !MaintenanceBypass(c, cfg) {
+			var schedAt string
+			db.Pool.QueryRow(context.Background(), `SELECT value FROM settings WHERE key='maintenance_scheduled_at'`).Scan(&schedAt)
+			if schedAt != "" {
+				st, err := parseRFC3339(schedAt)
+				if err == nil && time.Now().Add(3*time.Minute).After(st) && time.Now().Before(st) {
+					return c.Status(400).JSON(fiber.Map{"error": "Дождитесь окончания технических работ"})
+				}
+			}
+
+			var maintUntil string
+			db.Pool.QueryRow(context.Background(), `SELECT value FROM settings WHERE key='maintenance_until'`).Scan(&maintUntil)
+			if maintUntil != "" {
+				t, err := parseRFC3339(maintUntil)
+				if err == nil && time.Now().Before(t) {
+					return c.Status(400).JSON(fiber.Map{"error": "Дождитесь окончания технических работ"})
+				}
+			}
+		}
+
+		var testMode string
+		db.Pool.QueryRow(context.Background(), `SELECT value FROM settings WHERE key='test_mode'`).Scan(&testMode)
+		if testMode != "true" {
+			check, _, err := plugin.Request(cfg.PluginURL, cfg.PluginSecret, "/api/check-player", []byte(body.Player))
+			if err != nil || check != "OK" {
+				return c.Status(400).JSON(fiber.Map{"error": "Вы должны быть в игре для покупки"})
+			}
+		}
+
+		price := body.Amount
+		coins := price * coinsRate(cfg)
+		productName := fmt.Sprintf("Коины · %d", coins)
+		commands := buildCoinsCommand(cfg, body.Player, coins)
+
+		ctx := context.Background()
+		tx, err := db.Pool.BeginTx(ctx, pgx.TxOptions{})
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		defer tx.Rollback(ctx)
+
+		orderID := uuid.New().String()
+		pUUID := offlineUUID(body.Player)
+		var anypayPayID int64
+		inserted := false
+		for attempt := 0; attempt < 5; attempt++ {
+			anypayPayID = generateAnyPayPayID()
+			res, err := tx.Exec(ctx,
+				`INSERT INTO orders(id,player_name,player_uuid,product_id,product_name,price,status,payment_method,anypay_pay_id,commands_override,coins_amount)
+				 VALUES($1,$2,$3,NULL,$4,$5,'pending',$6,$7,$8,$9)
+				 ON CONFLICT (anypay_pay_id) WHERE anypay_pay_id IS NOT NULL DO NOTHING`,
+				orderID, body.Player, pUUID, productName, price, method, anypayPayID, commands, coins)
+			if err != nil {
+				return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+			}
+			if res.RowsAffected() > 0 {
+				inserted = true
+				break
+			}
+		}
+		if !inserted {
+			return c.Status(500).JSON(fiber.Map{"error": "could not allocate pay id"})
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		amount := fmt.Sprintf("%d.00", price)
+		currency := "RUB"
+		desc := fmt.Sprintf("%d коинов - %s", coins, body.Player)
+		if len(desc) > 150 {
+			desc = desc[:150]
+		}
+		payIDStr := strconv.FormatInt(anypayPayID, 10)
+
+		var (
+			paymentURL    string
+			transactionID string
+			paymentData   map[string]any
+			viaAPI        bool
+		)
+
+		email := strings.ToLower(body.Player) + "@elytrix.pw"
+		if cfg.AnyPayAPIID != "" && cfg.AnyPayAPIKey != "" {
+			if u, txID, pd, aerr := anypayCreatePayment(cfg, payIDStr, amount, currency, desc, email, method, methodCurrency); aerr == nil {
+				paymentURL, transactionID, paymentData, viaAPI = u, txID, pd, true
+				if txID != "" {
+					db.Pool.Exec(ctx, `UPDATE orders SET payment_id=$1 WHERE id=$2`, txID, orderID)
+				}
+				fmt.Println("=== AnyPay API create-payment ===")
+				fmt.Println("method:", method, "method_currency:", methodCurrency, "transaction_id:", txID, "url:", u)
+				fmt.Println("==================================")
+			} else {
+				fmt.Println("!!! anypay create-payment API failed, falling back to SCI:", aerr)
+			}
+		}
+
+		if !viaAPI {
+			signStr := cfg.AnyPayMerchantID + ":" + payIDStr + ":" + amount + ":" + currency + ":" +
+				desc + ":::" + cfg.AnyPayProjectSecret
+			sign := sha256hex(signStr)
+
+			params := url.Values{}
+			params.Set("merchant_id", cfg.AnyPayMerchantID)
+			params.Set("amount", amount)
+			params.Set("currency", currency)
+			params.Set("pay_id", payIDStr)
+			params.Set("desc", desc)
+			params.Set("method", method)
+			params.Set("sign", sign)
+
+			paymentURL = "https://anypay.io/merchant?" + params.Encode()
+			fmt.Println("=== AnyPay SCI ===")
+			fmt.Println("URL:", paymentURL)
+			fmt.Println("==================")
+		}
+
+		return c.JSON(fiber.Map{
+			"ok":             true,
+			"url":            paymentURL,
+			"order":          orderID,
+			"pay_id":         payIDStr,
+			"amount":         price,
+			"coins":          coins,
+			"method":         method,
+			"transaction_id": transactionID,
+			"payment_data":   paymentData,
+		})
+	}
+}
+
 func productOptionColumnExists(ctx context.Context, tx pgx.Tx, column string) bool {
 	var ok bool
 	err := tx.QueryRow(ctx, `
@@ -450,10 +648,10 @@ func fulfillPendingOrder(cfg *config.Config, orderID, transactionID string) bool
 	var currentStatus, playerName, commands, promoCode string
 	var optDays, optHours int
 	var optDur string
-	query := `SELECT o.status, o.player_name, COALESCE(NULLIF(po.commands,''), p.commands), o.promo_code,
+	query := `SELECT o.status, o.player_name, COALESCE(NULLIF(o.commands_override,''), NULLIF(po.commands,''), p.commands, ''), o.promo_code,
 		        ` + daysExpr + `, ` + hoursExpr + `, ` + durExpr + `
 		 FROM orders o
-		 JOIN products p ON p.id=o.product_id
+		 LEFT JOIN products p ON p.id=o.product_id
 		 LEFT JOIN product_options po ON po.id=o.option_id
 		 WHERE o.id=$1 FOR UPDATE OF o`
 	err = tx.QueryRow(ctx, query, orderID).Scan(&currentStatus, &playerName, &commands, &promoCode, &optDays, &optHours, &optDur)
@@ -640,13 +838,13 @@ func PaymentStatus(c *fiber.Ctx) error {
 	var err error
 	if orderID != "" {
 		err = db.Pool.QueryRow(context.Background(),
-			`SELECT o.status, o.player_name, o.price, p.name
-			 FROM orders o JOIN products p ON p.id=o.product_id
+			`SELECT o.status, o.player_name, o.price, COALESCE(NULLIF(o.product_name,''), p.name, 'Товар удалён')
+			 FROM orders o LEFT JOIN products p ON p.id=o.product_id
 			 WHERE o.id=$1`, orderID).Scan(&status, &playerName, &price, &productName)
 	} else {
 		err = db.Pool.QueryRow(context.Background(),
-			`SELECT o.status, o.player_name, o.price, p.name
-			 FROM orders o JOIN products p ON p.id=o.product_id
+			`SELECT o.status, o.player_name, o.price, COALESCE(NULLIF(o.product_name,''), p.name, 'Товар удалён')
+			 FROM orders o LEFT JOIN products p ON p.id=o.product_id
 			 WHERE o.anypay_pay_id::text=$1`, payID).Scan(&status, &playerName, &price, &productName)
 	}
 	if err != nil {

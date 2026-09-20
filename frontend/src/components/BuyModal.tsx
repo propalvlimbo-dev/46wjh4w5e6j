@@ -27,6 +27,9 @@ const CRYPTO_METHODS: MethodDef[] = [
 ]
 
 const ALL_METHODS = [...MAIN_METHODS, ...CRYPTO_METHODS]
+const COIN_RATE = 5
+const COIN_MIN_RUB = 1
+const COIN_MAX_RUB = 6000
 
 const QR_HINTS: Record<string, string> = {
   sbp: 'Наведите камеру банковского приложения на QR-код — оплата подтвердится автоматически.',
@@ -49,12 +52,15 @@ type PayInfo = {
   order: string
   pay_id: string
   amount: number
+  coins?: number
   payment_data?: any
 }
 
 export default function BuyModal({ product, onClose }: { product: any; onClose: () => void }) {
+  const isCoins = !!product?.isCoins
   const options: ProductOption[] = (product?.options || []) as ProductOption[]
-  const selectable = hasOptions(product)
+  const selectable = !isCoins && hasOptions(product)
+  const [coinRubles, setCoinRubles] = useState<number>(Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Number(product?.coinRubles || 100))))
   const [optionId, setOptionId] = useState<number>(options[0]?.id || 0)
   const [name, setName] = useState('')
   const [promo, setPromo] = useState('')
@@ -76,7 +82,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   }, [])
 
   useEffect(() => {
-    if (!promo) { setPromoState({}); return }
+    if (isCoins || !promo) { setPromoState({}); return }
     setPromoState({ checking: true })
     const t = setTimeout(() => {
       fetch(`/api/check-promo?code=${encodeURIComponent(promo)}&product_id=${product.id}`)
@@ -85,31 +91,49 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
         .catch(() => setPromoState({ ok: false, error: 'Ошибка сети' }))
     }, 400)
     return () => clearTimeout(t)
-  }, [promo, product.id])
+  }, [promo, product.id, isCoins])
 
-  // Автоматическая проверка статуса оплаты, пока пользователь на экране QR
+  // Автоматическая проверка статуса оплаты, пока пользователь на экране QR.
+  // Основной источник — наша БД; verify дергаем редко как запасной путь.
   useEffect(() => {
     if (step !== 'pay' || !pay?.pay_id) return
     let stop = false
-    const check = () => {
-      fetch(`/api/payment/verify?pay_id=${pay.pay_id}`)
+    let verifyBusy = false
+    let lastVerify = 0
+    const done = (d: any) => {
+      if (!stop && d && (d.status === 'paid' || d.status === 'issued')) {
+        setIssued(d.status === 'issued')
+        setStep('done')
+      }
+    }
+    const load = () => {
+      const q = pay.order ? `order=${pay.order}` : `pay_id=${pay.pay_id}`
+      fetch(`/api/payment/status?${q}`, { cache: 'no-store' })
         .then(r => (r.ok ? r.json() : null))
-        .then(d => {
-          if (!stop && d && (d.status === 'paid' || d.status === 'issued')) {
-            setIssued(d.status === 'issued')
-            setStep('done')
-          }
-        })
+        .then(done)
         .catch(() => {})
     }
-    const i = setInterval(check, 3000)
-    check()
+    const verify = () => {
+      const now = Date.now()
+      if (verifyBusy || now - lastVerify < 15000) return
+      verifyBusy = true
+      lastVerify = now
+      fetch(`/api/payment/verify?pay_id=${pay.pay_id}`, { cache: 'no-store' })
+        .then(r => (r.ok ? r.json() : null))
+        .then(done)
+        .catch(() => {})
+        .finally(() => { verifyBusy = false })
+    }
+    const tick = () => { load(); verify() }
+    const i = setInterval(tick, 3000)
+    tick()
     return () => { stop = true; clearInterval(i) }
   }, [step, pay])
 
   const selOpt = options.find(o => o.id === optionId) || options[0]
-  const basePrice = selectable && selOpt ? selOpt.price : product.price
-  const finalPrice = promoState.ok && promoState.discount ? Math.floor(basePrice * (100 - promoState.discount) / 100) : basePrice
+  const coinAmount = coinRubles * COIN_RATE
+  const basePrice = isCoins ? coinRubles : (selectable && selOpt ? selOpt.price : product.price)
+  const finalPrice = !isCoins && promoState.ok && promoState.discount ? Math.floor(basePrice * (100 - promoState.discount) / 100) : basePrice
   const optionLabel = selectable && selOpt ? selOpt.label : ''
 
   const startPay = async () => {
@@ -119,17 +143,19 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
     const def = resolveMethod(method)
     const mcur = def?.currency || ''
     try {
-      const r = await fetch('/api/create-payment', {
+      const r = await fetch(isCoins ? '/api/create-coins-payment' : '/api/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ player: name, product_id: product.id, option_id: selectable ? (selOpt?.id || 0) : 0, promo: promoState.ok ? promo : '', method: def?.id || method, method_currency: mcur })
+        body: JSON.stringify(isCoins
+          ? { player: name, amount: coinRubles, method: def?.id || method, method_currency: mcur }
+          : { player: name, product_id: product.id, option_id: selectable ? (selOpt?.id || 0) : 0, promo: promoState.ok ? promo : '', method: def?.id || method, method_currency: mcur })
       })
       const data = await r.json()
       if (!r.ok || !data.url) {
         setMsg(data.error || 'Ошибка создания платежа')
         return
       }
-      setPay({ url: data.url, order: data.order, pay_id: data.pay_id, amount: data.amount, payment_data: data.payment_data })
+      setPay({ url: data.url, order: data.order, pay_id: data.pay_id, amount: data.amount, coins: data.coins, payment_data: data.payment_data })
       setStep('pay')
     } catch {
       setMsg('Ошибка сети')
@@ -142,6 +168,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   const sel = resolveMethod(method)
   const canPay = name.length >= 3 && name.length <= 16 && method !== '' && !loading
   const qrHint = qrHintFor(method)
+  const setCoinAmountRub = (v: number) => setCoinRubles(Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Math.round(v || COIN_MIN_RUB))))
 
   return (
     <AnimatePresence>
@@ -175,10 +202,16 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
               {/* Левая часть — товар */}
               <div className="p-5 sm:p-8 bg-gradient-to-br from-pink-soft/40 to-white flex flex-col min-h-0">
                 <div className="flex items-start gap-4 mb-5 sm:mb-6 pr-10 shrink-0">
-                  <img
-                    src={product.image || '/images/placeholder.png'}
-                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover shadow-lg shrink-0"
-                  />
+                  {isCoins ? (
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shadow-lg shrink-0 bg-gradient-to-br from-pink to-pink-deep text-white flex items-center justify-center">
+                      <Coins size={38} />
+                    </div>
+                  ) : (
+                    <img
+                      src={product.image || '/images/placeholder.png'}
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover shadow-lg shrink-0"
+                    />
+                  )}
                   <div className="min-w-0">
                     <div className="text-xs text-ink/50 uppercase tracking-wider mb-1">Товар</div>
                     <div className="font-display text-xl sm:text-2xl leading-tight truncate">{product.name}</div>
@@ -187,7 +220,9 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                       {finalPrice !== basePrice && (
                         <div className="text-sm text-ink/40 line-through">{basePrice} ₽</div>
                       )}
-                      {optionLabel && (
+                      {isCoins ? (
+                        <div className="text-xs text-ink/50 font-medium">/ {coinAmount} коинов</div>
+                      ) : optionLabel && (
                         <div className="text-xs text-ink/50 font-medium">/ {optionLabel.toLowerCase()}</div>
                       )}
                     </div>
@@ -218,13 +253,66 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                   </div>
                 )}
 
+                {isCoins && (
+                  <div className="mb-5 sm:mb-6 shrink-0 bg-white/75 rounded-2xl p-4 border border-pink-soft/40">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div>
+                        <div className="text-xs text-ink/50 uppercase tracking-wider">Курс</div>
+                        <div className="font-semibold text-sm">1 ₽ = {COIN_RATE} коинов</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-ink/50">Получите</div>
+                        <div className="font-display text-xl text-pink-deep">{coinAmount}</div>
+                      </div>
+                    </div>
+                    <input
+                      type="range"
+                      min={COIN_MIN_RUB}
+                      max={COIN_MAX_RUB}
+                      value={coinRubles}
+                      onChange={e => setCoinAmountRub(Number(e.target.value))}
+                      className="w-full accent-pink"
+                    />
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      <label className="block">
+                        <span className="text-xs text-ink/50">Отдаёте</span>
+                        <input
+                          type="number"
+                          min={COIN_MIN_RUB}
+                          max={COIN_MAX_RUB}
+                          value={coinRubles}
+                          onChange={e => setCoinAmountRub(Number(e.target.value))}
+                          className="mt-1 w-full bg-white border border-pink-soft/60 rounded-xl px-3 py-2 outline-none focus:border-pink transition font-bold"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs text-ink/50">Получаете</span>
+                        <div className="mt-1 flex items-center rounded-xl border border-pink-soft/60 bg-pink-soft/15 overflow-hidden">
+                          <input
+                            type="number"
+                            min={COIN_RATE}
+                            max={COIN_MAX_RUB * COIN_RATE}
+                            step={COIN_RATE}
+                            value={coinAmount}
+                            onChange={e => setCoinAmountRub(Math.ceil(Number(e.target.value) / COIN_RATE))}
+                            className="w-full px-3 py-2 outline-none font-bold bg-transparent"
+                          />
+                          <span className="pr-3 text-ink/45 font-semibold">коинов</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white/70 rounded-2xl p-4 sm:p-5 flex flex-col flex-1 min-h-0">
                   <div className="font-semibold text-sm mb-3 shrink-0">Что вы получите:</div>
                   <div
                     data-lenis-prevent
                     className="allow-select text-sm text-ink/70 leading-relaxed whitespace-pre-line overflow-y-auto modal-scroll flex-1 pr-1 min-h-0"
                   >
-                    {(() => {
+                    {isCoins ? (
+                      <>Коины выдаются автоматически после оплаты.<br />Сейчас выбрано: <b>{coinAmount} коинов</b> за <b>{coinRubles} ₽</b>.</>
+                    ) : (() => {
                       const rest = (product.description || '').split('\n').slice(1).join('\n').trim()
                       return rest ? colorize(rest) : 'Покупка выдаётся на сервере сразу после оплаты.'
                     })()}
@@ -249,7 +337,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                   className="w-full bg-white border border-pink-soft/60 rounded-xl px-4 py-3 mb-4 outline-none focus:border-pink transition"
                 />
 
-                {!showPromo ? (
+                {!isCoins && (!showPromo ? (
                   <button
                     onClick={() => setShowPromo(true)}
                     className="text-sm text-pink hover:text-pink-deep font-medium flex items-center gap-1 mb-4 self-start"
@@ -282,7 +370,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                       <div className="text-xs text-red-500 mt-2">{promoState.error}</div>
                     )}
                   </div>
-                )}
+                ))}
 
                 <div className="text-xs text-ink/50 uppercase tracking-wider mb-1">Шаг 2</div>
                 <div className="font-display text-lg sm:text-xl mb-3">Способ оплаты</div>
@@ -336,7 +424,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
           {step === 'pay' && pay && (
             <div className="p-6 sm:p-8 flex flex-col items-center justify-center text-center overflow-y-auto modal-scroll" data-lenis-prevent>
               <div className="text-xs text-ink/50 uppercase tracking-wider mb-2">Оплата</div>
-              <div className="font-display text-xl sm:text-2xl leading-tight mb-1">{product.name}{optionLabel ? ` · ${optionLabel}` : ''}</div>
+              <div className="font-display text-xl sm:text-2xl leading-tight mb-1">{product.name}{isCoins ? ` · ${pay.coins || coinAmount} коинов` : optionLabel ? ` · ${optionLabel}` : ''}</div>
               <div className="text-pink font-bold text-2xl mb-5">{pay.amount} ₽</div>
 
               <div className="bg-white border-2 border-pink-soft/60 rounded-2xl p-4 mb-4 shadow-sm">
@@ -406,6 +494,12 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                   <span className="text-ink/50">Товар</span>
                   <span className="font-medium">{product.name}</span>
                 </div>
+                {isCoins && (
+                  <div className="flex justify-between mb-2">
+                    <span className="text-ink/50">Коины</span>
+                    <span className="font-medium">{pay?.coins || coinAmount}</span>
+                  </div>
+                )}
                 {optionLabel && (
                   <div className="flex justify-between mb-2">
                     <span className="text-ink/50">Срок</span>

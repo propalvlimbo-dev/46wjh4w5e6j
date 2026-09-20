@@ -18,6 +18,8 @@ type Config struct {
 	AnyPayAPIID         string
 	AnyPayAPIKey        string
 	AnyPayAPIURL        string
+	CoinsRate           string
+	CoinsCommand        string
 	SiteURL             string
 }
 
@@ -45,6 +47,8 @@ func Load() *Config {
 		AnyPayAPIID:         os.Getenv("ANYPAY_API_ID"),
 		AnyPayAPIKey:        os.Getenv("ANYPAY_API_KEY"),
 		AnyPayAPIURL:        getenvDefault("ANYPAY_API_URL", "https://anypay.io/api"),
+		CoinsRate:           getenvDefault("COINS_RATE", "5"),
+		CoinsCommand:        getenvDefault("COINS_COMMAND_TEMPLATE", "coins give %player% %coins%"),
 		SiteURL:             os.Getenv("SITE_URL"),
 	}
 }

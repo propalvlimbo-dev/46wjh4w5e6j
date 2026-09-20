@@ -322,7 +322,7 @@ func AdminOrderDetails(c *fiber.Ctx) error {
 	}
 	var option string
 	err := db.Pool.QueryRow(context.Background(),
-		`SELECT o.id,o.player_name,o.player_uuid,COALESCE(NULLIF(o.product_name,''),p.name,'Товар удалён'),COALESCE(p.description,''),COALESCE(NULLIF(po.commands,''),p.commands),o.price,o.status,o.created_at,COALESCE(NULLIF(o.option_label,''), NULLIF(o.period,''),'')
+		`SELECT o.id,o.player_name,o.player_uuid,COALESCE(NULLIF(o.product_name,''),p.name,'Товар удалён'),COALESCE(p.description,''),COALESCE(NULLIF(o.commands_override,''),NULLIF(po.commands,''),p.commands,''),o.price,o.status,o.created_at,COALESCE(NULLIF(o.option_label,''), NULLIF(o.period,''),'')
 		 FROM orders o
 		 LEFT JOIN products p ON p.id=o.product_id
 		 LEFT JOIN product_options po ON po.id=o.option_id

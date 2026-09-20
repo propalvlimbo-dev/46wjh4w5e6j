@@ -30,6 +30,7 @@ func main() {
 	api.Get("/check-player", middleware.RateLimit("check", 20, time.Minute), handlers.CheckPlayer(cfg))
 	api.Get("/check-promo", middleware.RateLimit("promo", 20, time.Minute), handlers.CheckPromo)
 	api.Post("/create-payment", middleware.RateLimit("pay", 10, time.Minute), handlers.CreatePayment(cfg))
+	api.Post("/create-coins-payment", middleware.RateLimit("pay-coins", 10, time.Minute), handlers.CreateCoinsPayment(cfg))
 	api.Get("/payment/callback", handlers.PaymentCallback(cfg))
 	api.Post("/payment/callback", handlers.PaymentCallback(cfg))
 	api.Get("/payment/status", handlers.PaymentStatus)
