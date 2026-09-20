@@ -254,16 +254,10 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                 )}
 
                 {isCoins && (
-                  <div className="mb-5 sm:mb-6 shrink-0 bg-white/75 rounded-2xl p-4 border border-pink-soft/40">
-                    <div className="flex items-center justify-between gap-3 mb-3">
-                      <div>
-                        <div className="text-xs text-ink/50 uppercase tracking-wider">Курс</div>
-                        <div className="font-semibold text-sm">1 ₽ = {COIN_RATE} коинов</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-ink/50">Получите</div>
-                        <div className="font-display text-xl text-pink-deep">{coinAmount}</div>
-                      </div>
+                  <div className="mb-4 shrink-0 bg-white/75 rounded-2xl p-3.5 border border-pink-soft/40">
+                    <div className="flex items-center justify-between gap-3 mb-2.5">
+                      <div className="text-xs text-ink/50">Курс: <b className="text-ink/70">1 ₽ = {COIN_RATE}</b></div>
+                      <div className="text-xs text-pink-deep font-semibold">{coinAmount} коинов</div>
                     </div>
                     <input
                       type="range"
@@ -273,17 +267,20 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                       onChange={e => setCoinAmountRub(Number(e.target.value))}
                       className="w-full accent-pink"
                     />
-                    <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-3">
                       <label className="block">
                         <span className="text-xs text-ink/50">Отдаёте</span>
-                        <input
-                          type="number"
-                          min={COIN_MIN_RUB}
-                          max={COIN_MAX_RUB}
-                          value={coinRubles}
-                          onChange={e => setCoinAmountRub(Number(e.target.value))}
-                          className="mt-1 w-full bg-white border border-pink-soft/60 rounded-xl px-3 py-2 outline-none focus:border-pink transition font-bold"
-                        />
+                        <div className="mt-1 flex items-center rounded-xl border border-pink-soft/60 bg-white overflow-hidden">
+                          <input
+                            type="number"
+                            min={COIN_MIN_RUB}
+                            max={COIN_MAX_RUB}
+                            value={coinRubles}
+                            onChange={e => setCoinAmountRub(Number(e.target.value))}
+                            className="min-w-0 w-full px-3 py-2 outline-none font-bold bg-transparent text-sm sm:text-base"
+                          />
+                          <span className="pr-3 text-ink/45 font-semibold">₽</span>
+                        </div>
                       </label>
                       <label className="block">
                         <span className="text-xs text-ink/50">Получаете</span>
@@ -295,9 +292,9 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                             step={COIN_RATE}
                             value={coinAmount}
                             onChange={e => setCoinAmountRub(Math.ceil(Number(e.target.value) / COIN_RATE))}
-                            className="w-full px-3 py-2 outline-none font-bold bg-transparent"
+                            className="min-w-0 w-full px-3 py-2 outline-none font-bold bg-transparent text-sm sm:text-base"
                           />
-                          <span className="pr-3 text-ink/45 font-semibold">коинов</span>
+                          <span className="pr-3 text-ink/45 font-semibold text-xs sm:text-sm">коинов</span>
                         </div>
                       </label>
                     </div>
