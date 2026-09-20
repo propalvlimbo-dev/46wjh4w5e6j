@@ -34,10 +34,8 @@ const COIN_MAX_RUB = 6000
 
 function CoinIcon({ className = '' }: { className?: string }) {
   return (
-    <div className={`rounded-full bg-gradient-to-br from-pink to-pink-deep p-[3px] shadow-lg shadow-pink/25 ${className}`}>
-      <div className="w-full h-full rounded-full border-2 border-white/55 bg-white/10 flex items-center justify-center">
-        <span className="font-display text-white text-[14px] leading-none">E</span>
-      </div>
+    <div className={`rounded-2xl bg-gradient-to-br from-pink to-pink-deep text-white flex items-center justify-center shadow-lg shadow-pink/25 ${className}`}>
+      <Coins size={36} strokeWidth={2.4} />
     </div>
   )
 }

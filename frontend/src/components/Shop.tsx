@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import BuyModal from './BuyModal'
+import { Coins } from 'lucide-react'
 
 import { hasOptions, minOptionPrice, type ProductOption } from '@/lib/options'
 
@@ -25,10 +26,8 @@ function clampRub(v: number) {
 
 function CoinIcon({ className = '' }: { className?: string }) {
   return (
-    <div className={`rounded-full bg-gradient-to-br from-pink to-pink-deep p-[3px] shadow-lg shadow-pink/25 ${className}`}>
-      <div className="w-full h-full rounded-full border-2 border-white/55 bg-white/10 flex items-center justify-center">
-        <span className="font-display text-white text-[15px] leading-none">E</span>
-      </div>
+    <div className={`rounded-2xl bg-gradient-to-br from-pink to-pink-deep text-white flex items-center justify-center shadow-lg shadow-pink/25 ${className}`}>
+      <Coins size={24} strokeWidth={2.4} />
     </div>
   )
 }
@@ -43,10 +42,10 @@ function CoinsOffer({ onBuy }: { onBuy: (rubles: number) => void }) {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-4xl glass rounded-3xl p-4 sm:p-6 overflow-hidden relative"
+      className="max-w-5xl glass rounded-3xl p-4 sm:p-6 lg:p-7 overflow-hidden relative"
     >
       <div className="absolute -right-20 -top-20 w-56 h-56 rounded-full bg-pink-soft/35 blur-3xl" />
-      <div className="relative grid lg:grid-cols-[minmax(0,1fr)_430px] gap-5 lg:gap-8 items-center">
+      <div className="relative grid lg:grid-cols-[minmax(0,1fr)_450px] gap-5 lg:gap-8 items-center">
         <div className="min-w-0">
           <div className="flex items-center gap-3 mb-4">
             <CoinIcon className="w-12 h-12 shrink-0" />
@@ -56,12 +55,10 @@ function CoinsOffer({ onBuy }: { onBuy: (rubles: number) => void }) {
             </div>
           </div>
           <p className="text-sm sm:text-base text-ink/65 leading-relaxed max-w-xl">
-            Пополняйте баланс коинами и покупайте внутриигровые предметы без лишних действий. Выберите сумму — монеты придут автоматически после оплаты.
+            Пополняй свой баланс коинами и покупай любые предметы с /shop.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
-            <span className="rounded-full bg-pink-soft/25 px-3 py-1 text-pink-deep">1 ₽ = {COIN_RATE} коинов</span>
-            <span className="rounded-full bg-white/70 px-3 py-1 text-ink/55">до {COIN_MAX_RUB * COIN_RATE} коинов</span>
-            <span className="rounded-full bg-white/70 px-3 py-1 text-ink/55">выдача онлайн</span>
+          <div className="mt-4 inline-flex rounded-full bg-pink-soft/25 px-3 py-1 text-xs font-semibold text-pink-deep">
+            1 ₽ = {COIN_RATE} коинов
           </div>
         </div>
 
