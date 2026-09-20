@@ -36,7 +36,7 @@ services:
       JWT_SECRET: '913cc77f27f9a5e5c51247d40efaadff683573baf22ef6f9a21e9592444bfd1d'
       PLUGIN_URL: ${PLUGIN_URL:-http://host.docker.internal:20559}
       PLUGIN_SECRET: ${PLUGIN_SECRET:-35a4b5fac4473d4e0228e37a8eeec12e5c5ccdb66da8ddc1e121caad195a37f9}
-      COINS_RATE: ${COINS_RATE:-5}
+      COINS_RATE: ${COINS_RATE:-10}
       COINS_COMMAND_TEMPLATE: "${COINS_COMMAND_TEMPLATE:-coins give %player% %coins%}"
       PORT: 8080
       DB_PASSWORD: ${DB_PASSWORD}

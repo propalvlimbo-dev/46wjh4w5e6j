@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import BuyModal from './BuyModal'
-import { Coins } from 'lucide-react'
 
 import { hasOptions, minOptionPrice, type ProductOption } from '@/lib/options'
 
@@ -16,12 +15,22 @@ type Product = {
 }
 
 const COINS_CATEGORY_ID = -1
-const COIN_RATE = 5
+const COIN_RATE = 10
 const COIN_MIN_RUB = 1
 const COIN_MAX_RUB = 6000
 
 function clampRub(v: number) {
   return Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Math.round(v || COIN_MIN_RUB)))
+}
+
+function CoinIcon({ className = '' }: { className?: string }) {
+  return (
+    <div className={`rounded-full bg-gradient-to-br from-pink to-pink-deep p-[3px] shadow-lg shadow-pink/25 ${className}`}>
+      <div className="w-full h-full rounded-full border-2 border-white/55 bg-white/10 flex items-center justify-center">
+        <span className="font-display text-white text-[15px] leading-none">E</span>
+      </div>
+    </div>
+  )
 }
 
 function CoinsOffer({ onBuy }: { onBuy: (rubles: number) => void }) {
@@ -34,76 +43,81 @@ function CoinsOffer({ onBuy }: { onBuy: (rubles: number) => void }) {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl glass rounded-3xl p-4 sm:p-5 overflow-hidden relative"
+      className="max-w-4xl glass rounded-3xl p-4 sm:p-6 overflow-hidden relative"
     >
-      <div className="absolute -right-16 -top-16 w-40 h-40 rounded-full bg-pink-soft/35 blur-3xl" />
-      <div className="relative">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink to-pink-deep text-white flex items-center justify-center shadow-md shadow-pink/20 shrink-0">
-              <Coins size={22} />
-            </div>
+      <div className="absolute -right-20 -top-20 w-56 h-56 rounded-full bg-pink-soft/35 blur-3xl" />
+      <div className="relative grid lg:grid-cols-[minmax(0,1fr)_430px] gap-5 lg:gap-8 items-center">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3 mb-4">
+            <CoinIcon className="w-12 h-12 shrink-0" />
             <div className="min-w-0">
-              <h3 className="font-display text-xl sm:text-2xl leading-tight truncate">Коины</h3>
-              <div className="text-xs text-ink/50">Игровая валюта Elytrix</div>
+              <div className="text-xs text-ink/50 uppercase tracking-wider">Игровая валюта</div>
+              <h3 className="font-display text-2xl sm:text-3xl leading-tight">Коины Elytrix</h3>
             </div>
           </div>
-          <div className="shrink-0 rounded-full bg-pink-soft/25 px-3 py-1 text-xs font-semibold text-pink-deep">
-            1 ₽ = {COIN_RATE}
+          <p className="text-sm sm:text-base text-ink/65 leading-relaxed max-w-xl">
+            Пополняйте баланс коинами и покупайте внутриигровые предметы без лишних действий. Выберите сумму — монеты придут автоматически после оплаты.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
+            <span className="rounded-full bg-pink-soft/25 px-3 py-1 text-pink-deep">1 ₽ = {COIN_RATE} коинов</span>
+            <span className="rounded-full bg-white/70 px-3 py-1 text-ink/55">до {COIN_MAX_RUB * COIN_RATE} коинов</span>
+            <span className="rounded-full bg-white/70 px-3 py-1 text-ink/55">выдача онлайн</span>
           </div>
         </div>
 
-        <input
-          type="range"
-          min={COIN_MIN_RUB}
-          max={COIN_MAX_RUB}
-          value={rubles}
-          onChange={e => setAmount(Number(e.target.value))}
-          className="w-full accent-pink"
-        />
-        <div className="flex justify-between text-[11px] text-ink/35 mt-1">
-          <span>{COIN_MIN_RUB} ₽</span>
-          <span>{COIN_MAX_RUB} ₽</span>
-        </div>
+        <div className="rounded-2xl bg-white/70 border border-pink-soft/40 p-4 sm:p-5 shadow-sm">
+          <input
+            type="range"
+            min={COIN_MIN_RUB}
+            max={COIN_MAX_RUB}
+            value={rubles}
+            onChange={e => setAmount(Number(e.target.value))}
+            className="w-full accent-pink"
+          />
+          <div className="flex justify-between text-[11px] text-ink/35 mt-1">
+            <span>{COIN_MIN_RUB} ₽</span>
+            <span>{COIN_MAX_RUB} ₽</span>
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4">
-          <label>
-            <span className="text-xs text-ink/50">Отдаёте</span>
-            <div className="mt-1 flex items-center rounded-xl border border-pink-soft/60 bg-white/80 overflow-hidden">
-              <input
-                type="number"
-                min={COIN_MIN_RUB}
-                max={COIN_MAX_RUB}
-                value={rubles}
-                onChange={e => setAmount(Number(e.target.value))}
-                className="min-w-0 w-full px-3 py-2.5 outline-none font-bold bg-transparent text-sm sm:text-base"
-              />
-              <span className="pr-3 text-ink/45 font-semibold">₽</span>
-            </div>
-          </label>
-          <label>
-            <span className="text-xs text-ink/50">Получаете</span>
-            <div className="mt-1 flex items-center rounded-xl border border-pink-soft/60 bg-white/80 overflow-hidden">
-              <input
-                type="number"
-                min={COIN_RATE}
-                max={COIN_MAX_RUB * COIN_RATE}
-                step={COIN_RATE}
-                value={coins}
-                onChange={e => setCoins(Number(e.target.value))}
-                className="min-w-0 w-full px-3 py-2.5 outline-none font-bold bg-transparent text-pink-deep text-sm sm:text-base"
-              />
-              <span className="pr-3 text-ink/45 font-semibold text-xs sm:text-sm">коинов</span>
-            </div>
-          </label>
-        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4">
+            <label>
+              <span className="text-xs text-ink/50">Отдаёте</span>
+              <div className="mt-1 flex items-center rounded-xl border border-pink-soft/60 bg-white/80 overflow-hidden">
+                <input
+                  type="number"
+                  min={COIN_MIN_RUB}
+                  max={COIN_MAX_RUB}
+                  value={rubles}
+                  onChange={e => setAmount(Number(e.target.value))}
+                  className="min-w-0 w-full px-3 py-2.5 outline-none font-bold bg-transparent text-sm sm:text-base"
+                />
+                <span className="pr-3 text-ink/45 font-semibold">₽</span>
+              </div>
+            </label>
+            <label>
+              <span className="text-xs text-ink/50">Получаете</span>
+              <div className="mt-1 flex items-center rounded-xl border border-pink-soft/60 bg-white/80 overflow-hidden">
+                <input
+                  type="number"
+                  min={COIN_RATE}
+                  max={COIN_MAX_RUB * COIN_RATE}
+                  step={COIN_RATE}
+                  value={coins}
+                  onChange={e => setCoins(Number(e.target.value))}
+                  className="min-w-0 w-full px-3 py-2.5 outline-none font-bold bg-transparent text-pink-deep text-sm sm:text-base"
+                />
+                <span className="pr-3 text-ink/45 font-semibold text-xs sm:text-sm">коинов</span>
+              </div>
+            </label>
+          </div>
 
-        <button
-          onClick={() => onBuy(rubles)}
-          className="mt-4 w-full bg-pink text-white py-3 rounded-xl font-semibold hover:bg-pink-deep transition shadow-lg shadow-pink/25"
-        >
-          Купить {coins} коинов
-        </button>
+          <button
+            onClick={() => onBuy(rubles)}
+            className="mt-4 w-full bg-pink text-white py-3 rounded-xl font-semibold hover:bg-pink-deep transition shadow-lg shadow-pink/25"
+          >
+            Купить {coins} коинов
+          </button>
+        </div>
       </div>
     </motion.div>
   )
@@ -112,15 +126,19 @@ function CoinsOffer({ onBuy }: { onBuy: (rubles: number) => void }) {
 export default function Shop() {
   const [cats, setCats] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [active, setActive] = useState<number | null>(COINS_CATEGORY_ID)
+  const [active, setActive] = useState<number | null>(null)
   const [buy, setBuy] = useState<Product | null>(null)
 
   useEffect(() => {
-    api<Category[]>('/api/categories').then(c => setCats(c || [])).catch(() => {})
+    api<Category[]>('/api/categories')
+      .then(c => { const list = c || []; setCats(list); setActive(list[0]?.id ?? COINS_CATEGORY_ID) })
+      .catch(() => { setActive(COINS_CATEGORY_ID) })
     api<Product[]>('/api/products').then(p => setProducts(p || [])).catch(() => {})
   }, [])
 
-  const allCats = [{ id: COINS_CATEGORY_ID, name: 'Коины' }, ...cats]
+  const allCats = cats.length > 0
+    ? [cats[0], { id: COINS_CATEGORY_ID, name: 'Коины' }, ...cats.slice(1)]
+    : [{ id: COINS_CATEGORY_ID, name: 'Коины' }]
   const filtered = (products || []).filter(p => p.category_id === active)
 
   return (

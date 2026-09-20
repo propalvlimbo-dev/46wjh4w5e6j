@@ -27,9 +27,20 @@ const CRYPTO_METHODS: MethodDef[] = [
 ]
 
 const ALL_METHODS = [...MAIN_METHODS, ...CRYPTO_METHODS]
-const COIN_RATE = 5
+const COIN_RATE = 10
 const COIN_MIN_RUB = 1
 const COIN_MAX_RUB = 6000
+
+
+function CoinIcon({ className = '' }: { className?: string }) {
+  return (
+    <div className={`rounded-full bg-gradient-to-br from-pink to-pink-deep p-[3px] shadow-lg shadow-pink/25 ${className}`}>
+      <div className="w-full h-full rounded-full border-2 border-white/55 bg-white/10 flex items-center justify-center">
+        <span className="font-display text-white text-[14px] leading-none">E</span>
+      </div>
+    </div>
+  )
+}
 
 const QR_HINTS: Record<string, string> = {
   sbp: 'Наведите камеру банковского приложения на QR-код — оплата подтвердится автоматически.',
@@ -203,9 +214,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
               <div className="p-5 sm:p-8 bg-gradient-to-br from-pink-soft/40 to-white flex flex-col min-h-0">
                 <div className="flex items-start gap-4 mb-5 sm:mb-6 pr-10 shrink-0">
                   {isCoins ? (
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shadow-lg shrink-0 bg-gradient-to-br from-pink to-pink-deep text-white flex items-center justify-center">
-                      <Coins size={38} />
-                    </div>
+                    <CoinIcon className="w-20 h-20 sm:w-24 sm:h-24 shrink-0" />
                   ) : (
                     <img
                       src={product.image || '/images/placeholder.png'}
