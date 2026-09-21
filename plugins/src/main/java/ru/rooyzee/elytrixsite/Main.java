@@ -152,13 +152,13 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             group = group.toLowerCase(Locale.ROOT);
 
             Set<String> excluded = excludedGroups();
-            if (excluded.contains(group)) return false;
+            if (isStaffExcluded(group, excluded)) return false;
 
             boolean hasPaidGroup = !"default".equals(group);
             for (InheritanceNode node : user.getNodes(NodeType.INHERITANCE)) {
                 if (node == null || node.getGroupName() == null) continue;
                 String inherited = node.getGroupName().toLowerCase(Locale.ROOT);
-                if (excluded.contains(inherited)) return false;
+                if (isStaffExcluded(inherited, excluded)) return false;
                 if (!"default".equals(inherited)) hasPaidGroup = true;
             }
 
@@ -178,6 +178,10 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             if (group != null && !group.isBlank()) out.add(group.toLowerCase(Locale.ROOT));
         }
         return out;
+    }
+
+    private boolean isStaffExcluded(String group, Set<String> excluded) {
+        return group != null && !"default".equals(group) && excluded.contains(group);
     }
 
     @EventHandler
@@ -455,8 +459,23 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
 
     private File clanExportFile() {
         String configured = getConfig().getString("clans.export-file", "plugins/ElytrixClans/export/clans.json");
-        File file = new File(configured);
-        return file.isAbsolute() ? file : new File(file.getPath());
+        File direct = new File(configured);
+        if (direct.isAbsolute()) return direct;
+
+        List<File> candidates = new ArrayList<>();
+        candidates.add(new File(configured));
+        candidates.add(new File(Bukkit.getWorldContainer(), configured));
+
+        File pluginsDir = getDataFolder().getParentFile();
+        if (pluginsDir != null) {
+            candidates.add(new File(pluginsDir, "ElytrixClans/export/clans.json"));
+            candidates.add(new File(pluginsDir, configured));
+        }
+
+        for (File candidate : candidates) {
+            if (candidate.isFile()) return candidate;
+        }
+        return candidates.get(0);
     }
 
     private JsonObject object(JsonObject parent, String key) {
@@ -529,7 +548,10 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             s.sendMessage("API: " + (server != null ? "RUNNING" : "STOPPED"));
             s.sendMessage("LuckPerms: " + (luckPerms != null ? "OK" : "ERROR"));
             s.sendMessage("Stats dirs: " + statsDirectories().size());
-            s.sendMessage("Clans export: " + clanExportFile().getPath());
+            s.sendMessage("Playtime top: " + buildPlaytimeTop().size());
+            File clansFile = clanExportFile();
+            s.sendMessage("Clans export: " + clansFile.getPath() + " exists=" + clansFile.isFile());
+            s.sendMessage("Clans top: " + buildClanTop().getAsJsonArray("clans").size());
             s.sendMessage("Pool active/idle: " + (pool != null ? pool.getHikariPoolMXBean().getActiveConnections() + "/" + pool.getHikariPoolMXBean().getIdleConnections() : "N/A"));
             s.sendMessage("Last request: " + (lastRequest == 0 ? "NONE" : (System.currentTimeMillis() - lastRequest) + "ms ago"));
             return true;
