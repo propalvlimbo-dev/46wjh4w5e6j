@@ -23,10 +23,20 @@ type topPlayer struct {
 	Seconds int64  `json:"seconds"` // наиграно на сервере
 }
 
+type topClan struct {
+	Name         string  `json:"name"`
+	Owner        string  `json:"owner"`
+	Exp          float64 `json:"exp"`
+	Level        int     `json:"level"`
+	MembersCount int     `json:"members_count"`
+}
+
 type topPayload struct {
 	Donators   []topDonator `json:"donators"`
 	Players    []topPlayer  `json:"players"`
 	PlayersOK  bool         `json:"players_ok"` // плагин был доступен
+	Clans      []topClan    `json:"clans"`
+	ClansOK    bool         `json:"clans_ok"` // ElytrixClans export был доступен
 	ServerTime string       `json:"server_time"`
 }
 
@@ -35,7 +45,8 @@ const topCacheTTL = 30 * time.Second
 
 // GetTop — топы сервера для сайта:
 //   - «Топ донатеров»: SUM(price) по оплаченным заказам из PostgreSQL (магазина);
-//   - «Топ активных»: playtime из MySQL плагина ElytrixSite (эндпоинт /api/leaderboard-playtime).
+//   - «Топ активных»: vanilla playtime из ElytrixSite (эндпоинт /api/leaderboard-playtime);
+//   - «Топы кланов»: опыт клана из ElytrixClans export через ElytrixSite (/api/clans/top).
 //
 // Ответ кэшируется в Redis на 5 минут (toп не должен долбить БД на каждый хит).
 func GetTop(cfg *config.Config) fiber.Handler {
@@ -55,6 +66,7 @@ func GetTop(cfg *config.Config) fiber.Handler {
 		payload := topPayload{
 			Donators:   []topDonator{},
 			Players:    []topPlayer{},
+			Clans:      []topClan{},
 			ServerTime: time.Now().UTC().Format(time.RFC3339),
 		}
 
@@ -75,12 +87,23 @@ func GetTop(cfg *config.Config) fiber.Handler {
 			}
 		}
 
-		// ——— Топ активных игроков (время в игре, из плагина) ———
+		// ——— Топ активных игроков (vanilla stats сервера, фильтр групп в ElytrixSite) ———
 		if res, status, perr := plugin.RequestJSON(cfg.PluginURL, cfg.PluginSecret, "/api/leaderboard-playtime", map[string]string{}); perr == nil && status == 200 {
 			var list []topPlayer
 			if json.Unmarshal([]byte(res), &list) == nil {
 				payload.Players = list
 				payload.PlayersOK = true
+			}
+		}
+
+		// ——— Топ кланов (считаем только опыт клана) ———
+		if res, status, perr := plugin.RequestJSON(cfg.PluginURL, cfg.PluginSecret, "/api/clans/top", map[string]string{}); perr == nil && status == 200 {
+			var parsed struct {
+				Clans []topClan `json:"clans"`
+			}
+			if json.Unmarshal([]byte(res), &parsed) == nil {
+				payload.Clans = parsed.Clans
+				payload.ClansOK = true
 			}
 		}
 

@@ -1,0 +1,31 @@
+mysql:
+  host: localhost
+  port: 3306
+  database: elytrix
+  user: elytrix
+  password: ""
+
+api:
+  port: 20559
+  secret: change_me
+  # Оставь пустым, если backend и Minecraft на одном хосте через host.docker.internal.
+  ip-whitelist: []
+
+# Топ активных берётся из ванильной статистики сервера: world/stats/*.json.
+# Сайт видит только игроков с донат-группой выше default и без staff-групп.
+playtime:
+  world: world
+  limit: 10
+  include-default: false
+  exclude-groups:
+    - default
+    - helper
+    - moderator
+    - curadm
+    - curator
+    - admin
+    - owner
+
+clans:
+  export-file: plugins/ElytrixClans/export/clans.json
+  limit: 10

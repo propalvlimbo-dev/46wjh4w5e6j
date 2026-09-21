@@ -6,8 +6,8 @@ import { Crown, RefreshCw, ServerCog, Shield, Timer, X } from 'lucide-react'
 // ============================================================
 // Топы сервера — модалка из шапки:
 //   • «Топ донатеров» — сумма доната через сайт (PostgreSQL, заказы paid/issued)
-//   • «Топ активных»  — наигранное время (MySQL плагина ElytrixSite)
-//   • «Топы кланов»   — зарезервировано под ElytrixClans
+//   • «Топ активных»  — vanilla-статистика playtime сервера с фильтром групп
+//   • «Топы кланов»   — опыт клана из ElytrixClans
 // Ровно топ-10, если не влезает — скролл внутри списка.
 // Головы: CSS-куб по текстуре скина, которую отдаёт /api/skin
 // (бэкенд: ely.by → плагин сервера → ванильный Стив; ничего внешнего в браузере).
@@ -15,7 +15,9 @@ import { Crown, RefreshCw, ServerCog, Shield, Timer, X } from 'lucide-react'
 
 type Donator = { name: string; amount: number; orders: number }
 type Player = { name: string; seconds: number }
-type TopData = { donators?: Donator[]; players?: Player[]; players_ok?: boolean; server_time?: string }
+type Clan = { name: string; owner?: string; exp: number; level?: number; members_count?: number }
+type Row = { name: string; stat: string; extra?: string; kind?: 'player' | 'clan' }
+type TopData = { donators?: Donator[]; players?: Player[]; players_ok?: boolean; clans?: Clan[]; clans_ok?: boolean; server_time?: string }
 
 // SKIN_V — версия рендера голов: меняем соль → старые кэши браузеров (в т.ч.
 // «24 часа» от прошлых версий) сами аннулируются без hard reload у игроков.
@@ -73,6 +75,10 @@ function fmtPlaytime(sec: number) {
   if (h >= 1000) return `${h.toLocaleString('ru-RU')} ч`
   if (h === 0) return `${m} мин`
   return `${h.toLocaleString('ru-RU')} ч ${m} мин`
+}
+
+function fmtExp(n: number) {
+  return `${Math.round(n || 0).toLocaleString('ru-RU')} опыта`
 }
 
 function plural(n: number, one: string, few: string, many: string) {
@@ -143,13 +149,19 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
 
   const donators = data?.donators || []
   const players = data?.players || []
+  const clans = data?.clans || []
 
-  const rows: { name: string; stat: string; extra?: string }[] =
+  const rows: Row[] =
     tab === 0
-      ? donators.slice(0, 10).map(d => ({ name: d.name, stat: fmtMoney(d.amount), extra: `${d.orders} ${plural(d.orders, 'покупка', 'покупки', 'покупок')}` }))
+      ? donators.slice(0, 10).map(d => ({ name: d.name, stat: fmtMoney(d.amount), extra: `${d.orders} ${plural(d.orders, 'покупка', 'покупки', 'покупок')}`, kind: 'player' }))
       : tab === 1
-      ? players.slice(0, 10).map(p => ({ name: p.name, stat: fmtPlaytime(p.seconds) }))
-      : []
+      ? players.slice(0, 10).map(p => ({ name: p.name, stat: fmtPlaytime(p.seconds), kind: 'player' }))
+      : clans.slice(0, 10).map(c => ({
+          name: c.name,
+          stat: fmtExp(c.exp),
+          extra: `${c.owner ? `Лидер: ${c.owner}` : 'Лидер не указан'}${c.members_count ? ` · ${c.members_count} уч.` : ''}`,
+          kind: 'clan'
+        }))
 
   return (
     <AnimatePresence>
@@ -238,7 +250,7 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.15 }}
                   >
-                    {loading && tab !== 2 ? (
+                    {loading ? (
                       <div className="space-y-0.5 px-1.5">
                         {Array.from({ length: 8 }).map((_, i) => (
                           <div key={i} className="flex items-center gap-3 px-2 py-2.5">
@@ -255,9 +267,9 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
                           <>
                             <Shield size={24} className="mx-auto text-pink/50 mb-3" />
                             <div className="text-[13px] text-ink/50 leading-relaxed">
-                              Топы кланов скоро появятся здесь.
+                              {data && !data.clans_ok ? 'ElytrixClans пока не отдал топ кланов.' : 'Кланов пока нет.'}
                               <br />
-                              Подготовлено под интеграцию с ElytrixClans.
+                              Топ считается только по опыту клана.
                             </div>
                           </>
                         ) : tab === 1 && data && !data.players_ok ? (
@@ -266,7 +278,7 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
                             <div className="text-[13px] text-ink/50 leading-relaxed">
                               Игровой сервер пока не передаёт статистику.
                               <br />
-                              Плагин ElytrixSite начнёт копить время игры после обновления.
+                              Топ активных берётся из общей статистики сервера.
                             </div>
                           </>
                         ) : (
@@ -289,7 +301,13 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
                               {i + 1}
                             </span>
                             <div className="pl-1.5 pr-2.5 py-1">
-                              <Head3D name={r.name} nonce={nonce} />
+                              {r.kind === 'clan' ? (
+                                <div className="w-9 h-9 rounded-lg bg-pink-soft/35 text-pink-deep flex items-center justify-center">
+                                  <Shield size={18} />
+                                </div>
+                              ) : (
+                                <Head3D name={r.name} nonce={nonce} />
+                              )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="truncate leading-tight font-semibold text-[14px] text-ink/85">{r.name}</div>
@@ -311,8 +329,8 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
             </div>
 
             <div className="shrink-0 px-5 py-2.5 border-t border-ink/[0.06] flex items-center justify-between text-[10.5px] text-ink/30">
-              <span>{tab === 2 ? 'Скоро: ElytrixClans' : 'Топ-10 · обновляется каждые 5 минут'}</span>
-              <span className="hidden sm:inline">наведи на голову ;)</span>
+              <span>{tab === 2 ? 'Считается только опыт клана' : 'Топ-10 · обновляется каждые 5 минут'}</span>
+              <span className="hidden sm:inline">{tab === 2 ? 'ElytrixClans' : 'наведи на голову ;)'}</span>
             </div>
           </motion.div>
         </motion.div>

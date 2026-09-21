@@ -25,3 +25,7 @@ build/
 coverage/
 *.log
 .DS_Store
+
+# java builds
+target/
+*/target/
