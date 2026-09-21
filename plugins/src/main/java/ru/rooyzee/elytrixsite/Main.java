@@ -390,6 +390,27 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
         return seconds;
     }
 
+    private int[] playtimeRankFor(UUID target) {
+        long targetSeconds = playtimeSecondsFor(target);
+        int rank = 1;
+        int eligible = 0;
+        Set<UUID> seen = new HashSet<>();
+        for (File statsDir : statsDirectories()) {
+            File[] files = statsDir != null ? statsDir.listFiles((dir, name) -> name.endsWith(".json")) : null;
+            if (files == null) continue;
+            for (File file : files) {
+                UUID uuid = uuidFromStatsFile(file.getName());
+                if (uuid == null || seen.contains(uuid) || !isAllowedByGroup(uuid)) continue;
+                seen.add(uuid);
+                long seconds = playtimeSecondsFor(uuid);
+                if (seconds <= 0) continue;
+                eligible++;
+                if (target != null && !uuid.equals(target) && seconds > targetSeconds) rank++;
+            }
+        }
+        return new int[]{targetSeconds > 0 ? rank : 0, eligible};
+    }
+
     private List<File> statsDirectories() {
         Map<String, File> dirs = new LinkedHashMap<>();
         List<String> configured = getConfig().getStringList("playtime.worlds");
@@ -447,9 +468,18 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             if (online != null) return online.getName();
             OfflinePlayer offline = Bukkit.getOfflinePlayer(uuid);
             if (offline.isOp()) return null;
-            return offline.getName();
+            String name = offline.getName();
+            if (name != null && !name.isBlank()) return name;
+            if (luckPerms != null) {
+                User user = luckPerms.getUserManager().getUser(uuid);
+                if (user == null) user = luckPerms.getUserManager().loadUser(uuid).get(3, TimeUnit.SECONDS);
+                if (user != null && user.getUsername() != null && !user.getUsername().isBlank()) {
+                    return user.getUsername();
+                }
+            }
+            return uuid.toString().substring(0, 8);
         } catch (Exception ignored) {
-            return null;
+            return uuid != null ? uuid.toString().substring(0, 8) : null;
         }
     }
 
@@ -630,6 +660,8 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             s.sendMessage("§ePlayer: " + a[1] + " uuid=" + uuid);
             s.sendMessage("§eGroups: " + groupDebug(uuid));
             s.sendMessage("§ePlaytime seconds: " + playtimeSecondsFor(uuid));
+            int[] rank = playtimeRankFor(uuid);
+            s.sendMessage("§ePlaytime rank: " + (rank[0] > 0 ? ("#" + rank[0] + " / " + rank[1]) : ("none / " + rank[1])));
             s.sendMessage("§eStats dirs: " + statsDirectories().size());
             return true;
         }
