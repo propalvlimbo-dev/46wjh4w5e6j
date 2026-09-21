@@ -43,8 +43,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -305,24 +307,29 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
     }
 
     private JsonArray buildPlaytimeTop() {
+        Map<UUID, Long> secondsByPlayer = new LinkedHashMap<>();
+        for (File statsDir : statsDirectories()) {
+            File[] files = statsDir != null ? statsDir.listFiles((dir, name) -> name.endsWith(".json")) : null;
+            if (files == null) continue;
+
+            for (File file : files) {
+                UUID uuid = uuidFromStatsFile(file.getName());
+                if (uuid == null || !isAllowedByGroup(uuid)) continue;
+
+                long seconds = readPlaytimeSeconds(file);
+                if (seconds <= 0) continue;
+                secondsByPlayer.merge(uuid, seconds, Long::sum);
+            }
+        }
+
         List<JsonObject> rows = new ArrayList<>();
-        File statsDir = statsDirectory();
-        File[] files = statsDir != null ? statsDir.listFiles((dir, name) -> name.endsWith(".json")) : null;
-        if (files == null) return new JsonArray();
-
-        for (File file : files) {
-            UUID uuid = uuidFromStatsFile(file.getName());
-            if (uuid == null || !isAllowedByGroup(uuid)) continue;
-
-            long seconds = readPlaytimeSeconds(file);
-            if (seconds <= 0) continue;
-
-            String name = playerName(uuid);
+        for (Map.Entry<UUID, Long> entry : secondsByPlayer.entrySet()) {
+            String name = playerName(entry.getKey());
             if (name == null || name.isBlank()) continue;
 
             JsonObject row = new JsonObject();
             row.addProperty("name", name);
-            row.addProperty("seconds", seconds);
+            row.addProperty("seconds", entry.getValue());
             rows.add(row);
         }
 
@@ -333,11 +340,33 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
         return top;
     }
 
-    private File statsDirectory() {
-        String configured = getConfig().getString("playtime.world", "world");
-        World world = Bukkit.getWorld(configured);
-        File folder = world != null ? world.getWorldFolder() : new File(configured);
-        return new File(folder, "stats");
+    private List<File> statsDirectories() {
+        Map<String, File> dirs = new LinkedHashMap<>();
+        List<String> configured = getConfig().getStringList("playtime.worlds");
+
+        if (configured == null || configured.isEmpty() || configured.stream().anyMatch(s -> "*".equals(s))) {
+            for (World world : Bukkit.getWorlds()) {
+                addStatsDirectory(dirs, world.getWorldFolder());
+            }
+        } else {
+            for (String name : configured) {
+                if (name == null || name.isBlank()) continue;
+                World world = Bukkit.getWorld(name);
+                addStatsDirectory(dirs, world != null ? world.getWorldFolder() : new File(name));
+            }
+        }
+        return new ArrayList<>(dirs.values());
+    }
+
+    private void addStatsDirectory(Map<String, File> dirs, File worldFolder) {
+        if (worldFolder == null) return;
+        File stats = new File(worldFolder, "stats");
+        if (!stats.isDirectory()) return;
+        try {
+            dirs.put(stats.getCanonicalPath(), stats);
+        } catch (IOException e) {
+            dirs.put(stats.getAbsolutePath(), stats);
+        }
     }
 
     private UUID uuidFromStatsFile(String name) {
@@ -499,7 +528,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             s.sendMessage("MySQL: " + (mysqlOk ? "OK" : "ERROR"));
             s.sendMessage("API: " + (server != null ? "RUNNING" : "STOPPED"));
             s.sendMessage("LuckPerms: " + (luckPerms != null ? "OK" : "ERROR"));
-            s.sendMessage("Stats dir: " + statsDirectory().getPath());
+            s.sendMessage("Stats dirs: " + statsDirectories().size());
             s.sendMessage("Clans export: " + clanExportFile().getPath());
             s.sendMessage("Pool active/idle: " + (pool != null ? pool.getHikariPoolMXBean().getActiveConnections() + "/" + pool.getHikariPoolMXBean().getIdleConnections() : "N/A"));
             s.sendMessage("Last request: " + (lastRequest == 0 ? "NONE" : (System.currentTimeMillis() - lastRequest) + "ms ago"));

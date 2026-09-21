@@ -14,7 +14,8 @@ api:
 # Топ активных берётся из ванильной статистики сервера: world/stats/*.json.
 # Сайт видит только игроков с донат-группой выше default и без staff-групп.
 playtime:
-  world: world
+  # Пусто или ["*"] = все миры с папкой stats. Можно указать конкретные: ["world", "world_nether"].
+  worlds: []
   limit: 10
   include-default: false
   exclude-groups:
