@@ -1,12 +1,13 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Crown, RefreshCw, ServerCog, Timer, X } from 'lucide-react'
+import { Crown, RefreshCw, ServerCog, Shield, Timer, X } from 'lucide-react'
 
 // ============================================================
 // Топы сервера — модалка из шапки:
 //   • «Топ донатеров» — сумма доната через сайт (PostgreSQL, заказы paid/issued)
 //   • «Топ активных»  — наигранное время (MySQL плагина ElytrixSite)
+//   • «Топы кланов»   — зарезервировано под ElytrixClans
 // Ровно топ-10, если не влезает — скролл внутри списка.
 // Головы: CSS-куб по текстуре скина, которую отдаёт /api/skin
 // (бэкенд: ely.by → плагин сервера → ванильный Стив; ничего внешнего в браузере).
@@ -86,7 +87,7 @@ const RANK_COLORS = ['text-[#d99e1f]', 'text-[#8b95a5]', 'text-[#b0713a]']
 export default function Tops({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [data, setData] = useState<TopData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState(0) // 0 = донатеры, 1 = активные
+  const [tab, setTab] = useState(0) // 0 = донатеры, 1 = активные, 2 = кланы
   const [spinning, setSpinning] = useState(false)
   const [fade, setFade] = useState(false)
   const [nonce, setNonce] = useState('')
@@ -146,7 +147,9 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
   const rows: { name: string; stat: string; extra?: string }[] =
     tab === 0
       ? donators.slice(0, 10).map(d => ({ name: d.name, stat: fmtMoney(d.amount), extra: `${d.orders} ${plural(d.orders, 'покупка', 'покупки', 'покупок')}` }))
-      : players.slice(0, 10).map(p => ({ name: p.name, stat: fmtPlaytime(p.seconds) }))
+      : tab === 1
+      ? players.slice(0, 10).map(p => ({ name: p.name, stat: fmtPlaytime(p.seconds) }))
+      : []
 
   return (
     <AnimatePresence>
@@ -199,16 +202,22 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
               </div>
 
               {/* табы: текстовые, с розовым подчёркиванием активного */}
-              <div className="mt-4 flex gap-6 border-b border-ink/[0.07] -mb-px">
-                {(['Топ донатеров', 'Топ активных'] as const).map((label, i) => (
+              <div className="mt-4 flex gap-4 sm:gap-6 border-b border-ink/[0.07] -mb-px overflow-x-auto">
+                {(['Топ донатеров', 'Топ активных', 'Топы кланов'] as const).map((label, i) => (
                   <button
                     key={label}
                     onClick={() => { setTab(i); listRef.current?.scrollTo({ top: 0 }) }}
-                    className={`relative pb-2.5 text-[13px] sm:text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+                    className={`relative shrink-0 pb-2.5 text-[13px] sm:text-sm font-semibold transition-colors flex items-center gap-1.5 ${
                       tab === i ? 'text-ink' : 'text-ink/40 hover:text-ink/70'
                     }`}
                   >
-                    {i === 0 ? <Crown size={13} className={tab === i ? 'text-pink' : ''} /> : <Timer size={13} className={tab === i ? 'text-pink' : ''} />}
+                    {i === 0 ? (
+                      <Crown size={13} className={tab === i ? 'text-pink' : ''} />
+                    ) : i === 1 ? (
+                      <Timer size={13} className={tab === i ? 'text-pink' : ''} />
+                    ) : (
+                      <Shield size={13} className={tab === i ? 'text-pink' : ''} />
+                    )}
                     {label}
                     {tab === i && (
                       <motion.span layoutId="tops-tab-underline" className="absolute left-0 right-0 -bottom-px h-[2px] rounded-full bg-pink" />
@@ -229,7 +238,7 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.15 }}
                   >
-                    {loading ? (
+                    {loading && tab !== 2 ? (
                       <div className="space-y-0.5 px-1.5">
                         {Array.from({ length: 8 }).map((_, i) => (
                           <div key={i} className="flex items-center gap-3 px-2 py-2.5">
@@ -242,7 +251,16 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
                       </div>
                     ) : rows.length === 0 ? (
                       <div className="text-center py-20 px-8">
-                        {tab === 1 && data && !data.players_ok ? (
+                        {tab === 2 ? (
+                          <>
+                            <Shield size={24} className="mx-auto text-pink/50 mb-3" />
+                            <div className="text-[13px] text-ink/50 leading-relaxed">
+                              Топы кланов скоро появятся здесь.
+                              <br />
+                              Подготовлено под интеграцию с ElytrixClans.
+                            </div>
+                          </>
+                        ) : tab === 1 && data && !data.players_ok ? (
                           <>
                             <ServerCog size={24} className="mx-auto text-pink/50 mb-3" />
                             <div className="text-[13px] text-ink/50 leading-relaxed">
@@ -293,7 +311,7 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
             </div>
 
             <div className="shrink-0 px-5 py-2.5 border-t border-ink/[0.06] flex items-center justify-between text-[10.5px] text-ink/30">
-              <span>Топ-10 · обновляется каждые 5 минут</span>
+              <span>{tab === 2 ? 'Скоро: ElytrixClans' : 'Топ-10 · обновляется каждые 5 минут'}</span>
               <span className="hidden sm:inline">наведи на голову ;)</span>
             </div>
           </motion.div>

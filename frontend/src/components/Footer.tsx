@@ -233,7 +233,6 @@ export default function Footer() {
             <div className="flex flex-col gap-3">
               <div className="font-display text-2xl gradient-text">Elytrix</div>
               <div className="text-xs text-ink/40">© 2026 Elytrix. Все права защищены.</div>
-              <div className="text-[10px] tracking-wide text-ink/25 select-text">PlaVER</div>
               <div className="flex flex-col gap-1.5 mt-1">
                 <button
                   onClick={() => setPolicyOpen(true)}

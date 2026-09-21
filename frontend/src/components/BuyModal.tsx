@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
 import {
-  X, Tag, Wallet, Check, AlertCircle, QrCode, CreditCard, Bitcoin, Coins,
+  X, Tag, Wallet, Check, AlertCircle, QrCode, Bitcoin, Coins,
   Loader2, ArrowLeft, ExternalLink, CheckCircle2, ChevronRight
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
@@ -14,9 +14,7 @@ type MethodDef = { id: string; label: string; desc: string; icon: any; currency?
 // Способы оплаты — правь под то, что включено в AnyPay
 const MAIN_METHODS: MethodDef[] = [
   { id: 'sbp', label: 'СБП', desc: 'QR-код', icon: QrCode },
-  { id: 'card_uah', label: 'Карта УКР', desc: 'UAH', icon: CreditCard, currency: 'UAH' },
-  { id: 'card_kzt', label: 'Карта KZ', desc: 'KZT', icon: CreditCard, currency: 'KZT' },
-  { id: 'card_azn', label: 'Карта AZN', desc: 'AZN', icon: CreditCard, currency: 'AZN' },
+  { id: 'funpay', label: 'FunPay', desc: 'баланс', icon: FunPayIcon },
 ]
 
 // Криптовалюты
@@ -40,11 +38,20 @@ function CoinIcon({ className = '' }: { className?: string }) {
   )
 }
 
+function FunPayIcon({ size = 20, className = '' }: { size?: number; className?: string }) {
+  return (
+    <span
+      className={`inline-flex items-center justify-center rounded-md bg-[#f6a623] !text-white font-display font-bold leading-none ${className}`}
+      style={{ width: size, height: size, fontSize: Math.max(11, Math.round(size * 0.62)) }}
+    >
+      F
+    </span>
+  )
+}
+
 const QR_HINTS: Record<string, string> = {
   sbp: 'Наведите камеру банковского приложения на QR-код — оплата подтвердится автоматически.',
-  card_uah: 'QR-код откроет форму оплаты картой (UAH).',
-  card_kzt: 'QR-код откроет форму оплаты картой (KZT).',
-  card_azn: 'QR-код откроет форму оплаты картой (AZN).',
+  funpay: 'QR-код откроет страницу оплаты через FunPay.',
 }
 
 function resolveMethod(id: string): MethodDef | undefined {
