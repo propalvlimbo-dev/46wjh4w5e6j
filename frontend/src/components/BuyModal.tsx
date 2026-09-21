@@ -14,7 +14,7 @@ type MethodDef = { id: string; label: string; desc: string; icon: any; currency?
 // Способы оплаты — правь под то, что включено в AnyPay
 const MAIN_METHODS: MethodDef[] = [
   { id: 'sbp', label: 'СБП', desc: 'QR-код', icon: QrCode },
-  { id: 'funpay', label: 'FunPay', desc: 'баланс', icon: FunPayIcon },
+  { id: 'funpay', label: 'FunPay', desc: 'В особых случаях', icon: FunPayIcon },
 ]
 
 // Криптовалюты
@@ -28,6 +28,8 @@ const ALL_METHODS = [...MAIN_METHODS, ...CRYPTO_METHODS]
 const COIN_RATE = 10
 const COIN_MIN_RUB = 1
 const COIN_MAX_RUB = 6000
+const FUNPAY_URL = 'https://funpay.com/users/7785488/'
+const FUNPAY_WARNING = 'У метода FunPay отключена автовыдача, ждать выдачи можно от 10 минут до 1 дня.'
 
 
 function CoinIcon({ className = '' }: { className?: string }) {
@@ -38,10 +40,10 @@ function CoinIcon({ className = '' }: { className?: string }) {
   )
 }
 
-function FunPayIcon({ size = 20, className = '' }: { size?: number; className?: string }) {
+function FunPayIcon({ size = 20 }: { size?: number; className?: string }) {
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-md bg-[#f6a623] !text-white font-display font-bold leading-none ${className}`}
+      className="inline-flex items-center justify-center rounded-md border border-ink/10 bg-ink/10 text-ink/45 font-display font-bold leading-none"
       style={{ width: size, height: size, fontSize: Math.max(11, Math.round(size * 0.62)) }}
     >
       F
@@ -153,10 +155,15 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   const optionLabel = selectable && selOpt ? selOpt.label : ''
 
   const startPay = async () => {
+    const def = resolveMethod(method)
+    if ((def?.id || method) === 'funpay') {
+      setMsg(FUNPAY_WARNING)
+      window.open(FUNPAY_URL, '_blank', 'noopener,noreferrer')
+      return
+    }
     if (payingRef.current) return
     payingRef.current = true
     setLoading(true); setMsg(null)
-    const def = resolveMethod(method)
     const mcur = def?.currency || ''
     try {
       const r = await fetch(isCoins ? '/api/create-coins-payment' : '/api/create-payment', {
@@ -418,7 +425,14 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                 )}
 
                 {msg && (
-                  <div className="text-center text-sm my-2 font-medium text-red-500">{msg}</div>
+                  <div className={`text-center text-sm my-2 font-medium ${msg === FUNPAY_WARNING ? 'text-amber-600' : 'text-red-500'}`}>
+                    {msg}
+                    {msg === FUNPAY_WARNING && (
+                      <a href={FUNPAY_URL} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-pink hover:text-pink-deep transition">
+                        Открыть FunPay <ExternalLink size={13} />
+                      </a>
+                    )}
+                  </div>
                 )}
 
                 <button

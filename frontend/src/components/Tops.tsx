@@ -202,12 +202,12 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
               </div>
 
               {/* табы: текстовые, с розовым подчёркиванием активного */}
-              <div className="mt-4 flex gap-4 sm:gap-6 border-b border-ink/[0.07] -mb-px overflow-x-auto">
+              <div className="mt-4 grid grid-cols-3 gap-1 sm:gap-3 border-b border-ink/[0.07] -mb-px">
                 {(['Топ донатеров', 'Топ активных', 'Топы кланов'] as const).map((label, i) => (
                   <button
                     key={label}
                     onClick={() => { setTab(i); listRef.current?.scrollTo({ top: 0 }) }}
-                    className={`relative shrink-0 pb-2.5 text-[13px] sm:text-sm font-semibold transition-colors flex items-center gap-1.5 ${
+                    className={`relative min-w-0 justify-center pb-2.5 text-[11px] sm:text-sm font-semibold transition-colors flex items-center gap-1 leading-tight ${
                       tab === i ? 'text-ink' : 'text-ink/40 hover:text-ink/70'
                     }`}
                   >
