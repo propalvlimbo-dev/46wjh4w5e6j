@@ -9,11 +9,16 @@
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <repositories>
         <repository>
             <id>purpur</id>
             <url>https://repo.purpurmc.org/snapshots</url>
+        </repository>
+        <repository>
+            <id>luckperms</id>
+            <url>https://repo.lucko.me/</url>
         </repository>
     </repositories>
     <dependencies>
