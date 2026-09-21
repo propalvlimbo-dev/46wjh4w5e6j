@@ -154,14 +154,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             Set<String> excluded = excludedGroups();
             if (isStaffExcluded(group, excluded)) return false;
 
-            boolean hasPaidGroup = !"default".equals(group);
-            for (InheritanceNode node : user.getNodes(NodeType.INHERITANCE)) {
-                if (node == null || node.getGroupName() == null) continue;
-                String inherited = node.getGroupName().toLowerCase(Locale.ROOT);
-                if (isStaffExcluded(inherited, excluded)) return false;
-                if (!"default".equals(inherited)) hasPaidGroup = true;
-            }
-
+            boolean hasPaidGroup = hasAllowedDonorGroup(user, group, excluded);
             if (!getConfig().getBoolean("playtime.include-default", false) && !hasPaidGroup) return false;
             return true;
         } catch (Exception ex) {
@@ -182,6 +175,48 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
 
     private boolean isStaffExcluded(String group, Set<String> excluded) {
         return group != null && !"default".equals(group) && excluded.contains(group);
+    }
+
+    private boolean isDonorGroup(String group, Set<String> excluded) {
+        return group != null && !group.isBlank() && !"default".equals(group) && !isStaffExcluded(group, excluded);
+    }
+
+    private boolean hasAllowedDonorGroup(User user, String primaryGroup, Set<String> excluded) {
+        if (isDonorGroup(primaryGroup, excluded)) return true;
+
+        for (InheritanceNode node : user.getNodes(NodeType.INHERITANCE)) {
+            if (node == null || node.getGroupName() == null) continue;
+            String inherited = node.getGroupName().toLowerCase(Locale.ROOT);
+            if (isStaffExcluded(inherited, excluded)) return false;
+            if (isDonorGroup(inherited, excluded)) return true;
+        }
+
+        for (net.luckperms.api.node.Node node : user.getNodes()) {
+            if (node == null || node.getKey() == null) continue;
+            String key = node.getKey().toLowerCase(Locale.ROOT);
+            if (!key.startsWith("group.")) continue;
+            String inherited = key.substring("group.".length());
+            if (isStaffExcluded(inherited, excluded)) return false;
+            if (isDonorGroup(inherited, excluded)) return true;
+        }
+
+        for (String configured : getConfig().getStringList("playtime.include-groups")) {
+            if (configured == null || configured.isBlank()) continue;
+            String group = configured.toLowerCase(Locale.ROOT);
+            if (user.getCachedData().getPermissionData().checkPermission("group." + group).asBoolean()) {
+                return true;
+            }
+        }
+
+        for (net.luckperms.api.model.group.Group groupObj : luckPerms.getGroupManager().getLoadedGroups()) {
+            if (groupObj == null || groupObj.getName() == null) continue;
+            String group = groupObj.getName().toLowerCase(Locale.ROOT);
+            if (!isDonorGroup(group, excluded)) continue;
+            if (user.getCachedData().getPermissionData().checkPermission("group." + group).asBoolean()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @EventHandler
@@ -342,6 +377,17 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
         int limit = Math.max(1, getConfig().getInt("playtime.limit", 10));
         rows.stream().limit(limit).forEach(top::add);
         return top;
+    }
+
+    private long playtimeSecondsFor(UUID uuid) {
+        if (uuid == null) return 0L;
+        String fileName = uuid + ".json";
+        long seconds = 0L;
+        for (File statsDir : statsDirectories()) {
+            File file = new File(statsDir, fileName);
+            if (file.isFile()) seconds += readPlaytimeSeconds(file);
+        }
+        return seconds;
     }
 
     private List<File> statsDirectories() {
@@ -541,8 +587,52 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
         } catch (Exception e) { return ""; }
     }
 
+    private UUID findKnownUuid(String name) {
+        if (name == null || name.isBlank()) return null;
+        Player online = Bukkit.getPlayerExact(name);
+        if (online != null) return online.getUniqueId();
+        for (OfflinePlayer offline : Bukkit.getOfflinePlayers()) {
+            if (offline != null && offline.getName() != null && offline.getName().equalsIgnoreCase(name)) {
+                return offline.getUniqueId();
+            }
+        }
+        try {
+            return Bukkit.getOfflinePlayer(name).getUniqueId();
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String groupDebug(UUID uuid) {
+        if (luckPerms == null || uuid == null) return "LuckPerms/uuid missing";
+        try {
+            User user = luckPerms.getUserManager().getUser(uuid);
+            if (user == null) user = luckPerms.getUserManager().loadUser(uuid).get(3, TimeUnit.SECONDS);
+            if (user == null) return "LuckPerms user not found";
+
+            Set<String> inherited = new HashSet<>();
+            for (InheritanceNode node : user.getNodes(NodeType.INHERITANCE)) {
+                if (node != null && node.getGroupName() != null) inherited.add(node.getGroupName());
+            }
+            String primary = user.getPrimaryGroup();
+            Set<String> excluded = excludedGroups();
+            return "primary=" + primary + ", inherited=" + inherited + ", allowed=" + isAllowedByGroup(uuid)
+                    + ", donor=" + hasAllowedDonorGroup(user, primary == null ? "default" : primary.toLowerCase(Locale.ROOT), excluded);
+        } catch (Exception e) {
+            return "LuckPerms error: " + e.getMessage();
+        }
+    }
+
     @Override
     public boolean onCommand(CommandSender s, Command c, String l, String[] a) {
+        if (a.length == 2 && a[0].equalsIgnoreCase("debug")) {
+            UUID uuid = findKnownUuid(a[1]);
+            s.sendMessage("§ePlayer: " + a[1] + " uuid=" + uuid);
+            s.sendMessage("§eGroups: " + groupDebug(uuid));
+            s.sendMessage("§ePlaytime seconds: " + playtimeSecondsFor(uuid));
+            s.sendMessage("§eStats dirs: " + statsDirectories().size());
+            return true;
+        }
         if (a.length == 1 && a[0].equalsIgnoreCase("status")) {
             s.sendMessage("MySQL: " + (mysqlOk ? "OK" : "ERROR"));
             s.sendMessage("API: " + (server != null ? "RUNNING" : "STOPPED"));
@@ -561,6 +651,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             return true;
         }
         s.sendMessage("§c/elytrixsite status");
+        s.sendMessage("§c/elytrixsite debug <ник>");
         return true;
     }
 }

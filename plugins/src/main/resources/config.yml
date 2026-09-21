@@ -18,6 +18,9 @@ playtime:
   worlds: []
   limit: 10
   include-default: false
+  # Необязательно: если LuckPerms странно считает primary group, можно явно вписать донат-группы.
+  # Например: [immortal, deluxe, vip]
+  include-groups: []
   exclude-groups:
     - default
     - helper
