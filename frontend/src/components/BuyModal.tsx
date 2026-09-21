@@ -43,7 +43,7 @@ function CoinIcon({ className = '' }: { className?: string }) {
 function FunPayIcon({ size = 20 }: { size?: number; className?: string }) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-md border border-ink/10 bg-ink/10 text-ink/45 font-display font-bold leading-none"
+      className="inline-flex items-center justify-center rounded-md border border-[#d3dbe6] bg-[#edf1f7] text-[#52667d] font-display font-bold leading-none"
       style={{ width: size, height: size, fontSize: Math.max(11, Math.round(size * 0.62)) }}
     >
       F
@@ -88,6 +88,8 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   const [msg, setMsg] = useState<string | null>(null)
   const [method, setMethod] = useState('')          // '' = способ ещё не выбран
   const [methodsOpen, setMethodsOpen] = useState(false)
+  const [funPayOpen, setFunPayOpen] = useState(false)
+  const [funPayWait, setFunPayWait] = useState(0)
   const [step, setStep] = useState<'form' | 'pay' | 'done'>('form')
   const [pay, setPay] = useState<PayInfo | null>(null)
   const [issued, setIssued] = useState(false)
@@ -98,6 +100,21 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = prev }
   }, [])
+
+  useEffect(() => {
+    if (!funPayOpen) return
+    setFunPayWait(3)
+    const t = setInterval(() => {
+      setFunPayWait(v => {
+        if (v <= 1) {
+          clearInterval(t)
+          return 0
+        }
+        return v - 1
+      })
+    }, 1000)
+    return () => clearInterval(t)
+  }, [funPayOpen])
 
   useEffect(() => {
     if (isCoins || !promo) { setPromoState({}); return }
@@ -157,8 +174,9 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   const startPay = async () => {
     const def = resolveMethod(method)
     if ((def?.id || method) === 'funpay') {
-      setMsg(FUNPAY_WARNING)
-      window.open(FUNPAY_URL, '_blank', 'noopener,noreferrer')
+      setMsg(null)
+      setFunPayWait(3)
+      setFunPayOpen(true)
       return
     }
     if (payingRef.current) return
@@ -425,14 +443,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                 )}
 
                 {msg && (
-                  <div className={`text-center text-sm my-2 font-medium ${msg === FUNPAY_WARNING ? 'text-amber-600' : 'text-red-500'}`}>
-                    {msg}
-                    {msg === FUNPAY_WARNING && (
-                      <a href={FUNPAY_URL} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-pink hover:text-pink-deep transition">
-                        Открыть FunPay <ExternalLink size={13} />
-                      </a>
-                    )}
-                  </div>
+                  <div className="text-center text-sm my-2 font-medium text-red-500">{msg}</div>
                 )}
 
                 <button
@@ -548,6 +559,46 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                 Отлично
               </button>
             </div>
+          )}
+
+          {/* Предупреждение FunPay */}
+          {funPayOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setFunPayOpen(false)}
+              className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.94, y: 16, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.94, y: 16, opacity: 0 }}
+                transition={{ type: 'spring', damping: 24, stiffness: 320 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-5 text-center"
+              >
+                <FunPayIcon size={36} />
+                <div className="font-display text-xl mt-3 mb-1">FunPay</div>
+                <div className="text-xs text-ink/45 mb-4">Пользователь Pe4kin0 / FunPay</div>
+                <div className="rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm leading-relaxed px-4 py-3 mb-4">
+                  {FUNPAY_WARNING}
+                </div>
+                <button
+                  disabled={funPayWait > 0}
+                  onClick={() => { window.open(FUNPAY_URL, '_blank', 'noopener,noreferrer'); setFunPayOpen(false) }}
+                  className="w-full bg-pink text-white py-3 rounded-xl font-semibold hover:bg-pink-deep transition disabled:opacity-50 disabled:hover:bg-pink"
+                >
+                  {funPayWait > 0 ? `Перейти через ${funPayWait} сек` : 'Перейти'}
+                </button>
+                <button
+                  onClick={() => setFunPayOpen(false)}
+                  className="mt-2 w-full px-4 py-2.5 rounded-xl text-ink/55 hover:bg-black/5 transition text-sm font-medium"
+                >
+                  Отмена
+                </button>
+              </motion.div>
+            </motion.div>
           )}
 
           {/* Всплывающее окно выбора способа оплаты */}
