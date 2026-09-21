@@ -1,0 +1,17 @@
+name: ElytrixSite
+version: 1.0
+main: ru.rooyzee.elytrixsite.Main
+api-version: 1.16
+author: rooyzee
+softdepend: [LuckPerms]
+
+commands:
+  elytrixsite:
+    description: управление ElytrixSite
+    usage: /elytrixsite <status|reset-time>
+    aliases: [elysite]
+    permission: elytrixsite.admin
+
+permissions:
+  elytrixsite.admin:
+    default: op

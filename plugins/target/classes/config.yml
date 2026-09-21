@@ -1,0 +1,12 @@
+mysql:
+  host: mysql.play2go.cloud
+  port: 3306
+  database: s29470_elytrix
+  user: u29470_iHvxVAwYg8
+  password: "8==5FI.lN7lQxweIONORr@.C"
+
+api:
+  port: 20559
+  secret: 35a4b5fac4473d4e0228e37a8eeec12e5c5ccdb66da8ddc1e121caad195a37f9
+  ip-whitelist:
+    - 159.194.238.84
