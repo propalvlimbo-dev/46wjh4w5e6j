@@ -18,9 +18,72 @@ const unbounded = Unbounded({
   display: 'swap'
 })
 
+const siteUrl = 'https://elytrix.pw'
+const siteTitle = 'Elytrix — гриферский сервер Minecraft | Элитрикс'
+const siteDescription = 'Elytrix (Элитрикс) — гриферский Minecraft сервер с кланами, PvP, топами игроков, коинами, донатом и мгновенной выдачей покупок. IP: mc.elytrix.pw.'
+
 export const metadata: Metadata = {
-  title: 'Elytrix — Донат магазин',
-  description: 'Магазин привилегий Minecraft сервера'
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: siteTitle,
+    template: '%s | Elytrix'
+  },
+  description: siteDescription,
+  applicationName: 'Elytrix',
+  keywords: [
+    'Elytrix',
+    'ElytriX',
+    'Элитрикс',
+    'элитрикс сервер',
+    'elytrix сервер',
+    'гриферский сервер',
+    'гриферский сервер майнкрафт',
+    'Minecraft сервер',
+    'майнкрафт сервер',
+    'сервер Minecraft с донатом',
+    'донат магазин Minecraft',
+    'mc.elytrix.pw'
+  ],
+  authors: [{ name: 'Elytrix' }],
+  creator: 'Elytrix',
+  publisher: 'Elytrix',
+  category: 'Minecraft server',
+  alternates: {
+    canonical: '/'
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'ru_RU',
+    url: '/',
+    siteName: 'Elytrix',
+    title: siteTitle,
+    description: siteDescription,
+    images: [
+      {
+        url: '/images/hero.png',
+        width: 1200,
+        height: 630,
+        alt: 'Elytrix — гриферский Minecraft сервер'
+      }
+    ]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: siteTitle,
+    description: siteDescription,
+    images: ['/images/hero.png']
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1
+    }
+  }
 }
 
 export const viewport: Viewport = {
