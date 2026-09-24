@@ -2,7 +2,6 @@ import Header from '@/components/Header'
 import Hero from '@/components/Hero'
 import LiveOrders from '@/components/LiveOrders'
 import Shop from '@/components/Shop'
-import SeoContent from '@/components/SeoContent'
 
 import Footer from '@/components/Footer'
 
@@ -61,7 +60,6 @@ export default function Home() {
       />
       <Header />
       <Hero />
-      <SeoContent />
       <Shop />
       <LiveOrders />
       <Footer />

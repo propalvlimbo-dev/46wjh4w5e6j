@@ -50,7 +50,7 @@ export default function Hero() {
             transition={{ duration: 0.8 }}
             className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-tight"
           >
-            <span className="gradient-text">Elytrix</span> — гриферский сервер Minecraft
+            Начни свою <span className="gradient-text">историю</span> на Elytrix
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 30 }}
@@ -58,7 +58,7 @@ export default function Hero() {
             transition={{ duration: 0.8, delay: 0.15 }}
             className="mt-5 sm:mt-6 text-base sm:text-lg text-ink/70 max-w-md mx-auto md:mx-0"
           >
-            Элитрикс — Minecraft сервер с гриферским режимом, кланами, PvP, топами, коинами и мгновенной выдачей покупок. IP: mc.elytrix.pw.
+            Уютный сервер, крутые привилегии и мгновенная выдача покупок прямо на сервер.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -83,7 +83,7 @@ export default function Hero() {
             <motion.img
               key="fly"
               src="/images/hero.png"
-              alt="Elytrix — гриферский Minecraft сервер"
+              alt="hero"
               initial={{ opacity: 0, scale: 0.2, y: -400, rotate: -25 }}
               animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
               transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1] }}
@@ -93,7 +93,7 @@ export default function Hero() {
             <motion.img
               key="float"
               src="/images/hero.png"
-              alt="Elytrix — гриферский Minecraft сервер"
+              alt="hero"
               animate={{ y: [0, -18, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
               className="drop-shadow-2xl w-full max-w-[320px] sm:max-w-[500px] md:max-w-[650px]"
