@@ -260,16 +260,16 @@ export default function RulesModal({ open, onClose }: { open: boolean; onClose: 
             </div>
 
             <div data-lenis-prevent className="allow-select overflow-y-auto modal-scroll p-4 sm:p-6">
-              <div className="grid lg:grid-cols-[210px_minmax(0,1fr)] gap-5 lg:gap-7">
+              <div className="grid lg:grid-cols-[150px_minmax(0,1fr)] gap-4 lg:gap-5">
                 <aside className="lg:sticky lg:top-0 h-fit">
-                  <div className="rounded-2xl bg-pink-soft/20 border border-pink-soft/40 p-2 lg:p-3">
-                    <div className="hidden lg:block px-2 pb-2 text-[11px] uppercase tracking-wider text-ink/40 font-semibold">Разделы</div>
-                    <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0">
+                  <div className="rounded-2xl bg-pink-soft/20 border border-pink-soft/40 p-2">
+                    <div className="hidden lg:block px-2 pb-1.5 text-[10px] uppercase tracking-wider text-ink/40 font-semibold">Разделы</div>
+                    <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0">
                       {sections.map(section => (
                         <button
                           key={section.id}
                           onClick={() => scrollToSection(section.id)}
-                          className="shrink-0 lg:shrink text-left rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-ink/60 hover:text-pink-deep hover:bg-white/75 transition"
+                          className="shrink-0 lg:shrink text-left rounded-lg px-2.5 py-1.5 text-[12px] font-semibold text-ink/60 hover:text-pink-deep hover:bg-white/75 transition"
                         >
                           {section.nav}
                         </button>
@@ -279,12 +279,6 @@ export default function RulesModal({ open, onClose }: { open: boolean; onClose: 
                 </aside>
 
                 <div className="space-y-7">
-                  <div className="rounded-3xl bg-gradient-to-br from-pink-soft/35 to-white border border-pink-soft/40 p-4 sm:p-5">
-                    <p className="text-sm sm:text-base text-ink/70 leading-relaxed">
-                      Добро пожаловать на ElytriX! Правила созданы для комфортной и честной игры. Администрация старается применять наказания соразмерно нарушению, учитывая обстоятельства, повторность и тяжесть ситуации.
-                    </p>
-                  </div>
-
                   {sections.map(section => (
                     <section key={section.id} id={`rules-${section.id}`} className="scroll-mt-4">
                       <h3 className="font-display text-xl sm:text-2xl mb-3">{section.title}</h3>
