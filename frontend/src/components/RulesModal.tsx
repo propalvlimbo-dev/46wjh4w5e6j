@@ -260,16 +260,16 @@ export default function RulesModal({ open, onClose }: { open: boolean; onClose: 
             </div>
 
             <div data-lenis-prevent className="allow-select overflow-y-auto modal-scroll p-4 sm:p-6">
-              <div className="grid lg:grid-cols-[180px_minmax(0,1fr)] gap-4 lg:gap-5">
+              <div className="grid lg:grid-cols-[190px_minmax(0,1fr)] gap-4 lg:gap-5">
                 <aside className="lg:sticky lg:top-0 h-fit lg:self-start">
-                  <div className="rounded-2xl bg-pink-soft/20 border border-pink-soft/40 p-2.5 lg:p-3 lg:h-[calc(90vh-190px)] lg:min-h-[500px] lg:max-h-[640px] lg:flex lg:flex-col">
-                    <div className="hidden lg:block px-2 pb-2 text-[11px] uppercase tracking-wider text-ink/40 font-semibold">Разделы</div>
-                    <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0 lg:flex-1">
+                  <div className="rounded-2xl bg-pink-soft/20 border border-pink-soft/40 p-3">
+                    <div className="hidden lg:block px-2 pb-2.5 text-[11px] uppercase tracking-wider text-ink/40 font-semibold">Разделы</div>
+                    <div className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0">
                       {sections.map(section => (
                         <button
                           key={section.id}
                           onClick={() => scrollToSection(section.id)}
-                          className="shrink-0 lg:shrink lg:w-full text-left rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-ink/60 hover:text-pink-deep hover:bg-white/75 transition"
+                          className="shrink-0 lg:shrink lg:w-full text-left rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-ink/65 hover:text-pink-deep hover:bg-white/80 transition"
                         >
                           {section.nav}
                         </button>
