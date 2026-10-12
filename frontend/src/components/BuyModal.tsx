@@ -99,6 +99,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   const [funPayWait, setFunPayWait] = useState(0)
   const [step, setStep] = useState<'form' | 'pay' | 'done'>('form')
   const [pay, setPay] = useState<PayInfo | null>(null)
+  const [directPay, setDirectPay] = useState(false)
   const [issued, setIssued] = useState(false)
   const payingRef = useRef(false)
 
@@ -190,6 +191,8 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
     payingRef.current = true
     setLoading(true); setMsg(null)
     const mcur = def?.currency || ''
+    const openDirectly = method.startsWith('card-') || CRYPTO_METHODS.some(m => m.id === method)
+    const paymentWindow = openDirectly ? window.open('', '_blank') : null
     try {
       const r = await fetch(isCoins ? '/api/create-coins-payment' : '/api/create-payment', {
         method: 'POST',
@@ -200,10 +203,13 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
       })
       const data = await r.json()
       if (!r.ok || !data.url) {
+        if (paymentWindow) paymentWindow.close()
         setMsg(data.error || 'Ошибка создания платежа')
         return
       }
       setPay({ url: data.url, order: data.order, pay_id: data.pay_id, amount: data.amount, coins: data.coins, payment_data: data.payment_data })
+      setDirectPay(openDirectly)
+      if (paymentWindow) paymentWindow.location.href = data.url
       setStep('pay')
     } catch {
       setMsg('Ошибка сети')
@@ -470,13 +476,19 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
               <div className="font-display text-xl sm:text-2xl leading-tight mb-1">{product.name}{isCoins ? ` · ${pay.coins || coinAmount} коинов` : optionLabel ? ` · ${optionLabel}` : ''}</div>
               <div className="text-pink font-bold text-2xl mb-5">{pay.amount} ₽</div>
 
-              <div className="bg-white border-2 border-pink-soft/60 rounded-2xl p-4 mb-4 shadow-sm">
-                <QRCodeSVG value={pay.url} size={200} level="M" bgColor="#ffffff" fgColor="#1f1f1f" />
-              </div>
-
-              <p className="text-sm text-ink/70 mb-1 max-w-xs">{qrHint}</p>
+              {!directPay && (
+                <>
+                  <div className="bg-white border-2 border-pink-soft/60 rounded-2xl p-4 mb-4 shadow-sm">
+                    <QRCodeSVG value={pay.url} size={200} level="M" bgColor="#ffffff" fgColor="#1f1f1f" />
+                  </div>
+                  <p className="text-sm text-ink/70 mb-1 max-w-xs">{qrHint}</p>
+                </>
+              )}
+              {directPay && (
+                <p className="text-sm text-ink/70 mb-4 max-w-xs">Страница оплаты открыта в новой вкладке.</p>
+              )}
               <p className="text-xs text-ink/50 mb-3">Страница обновится автоматически после оплаты</p>
-              <p className="text-xs text-pink font-medium mb-3 sm:hidden">На телефоне свой экран не отсканировать — нажмите кнопку «Открыть страницу оплаты».</p>
+              {!directPay && <p className="text-xs text-pink font-medium mb-3 sm:hidden">На телефоне свой экран не отсканировать — нажмите кнопку «Открыть страницу оплаты».</p>}
 
               {pay.payment_data && (pay.payment_data.bank || pay.payment_data.account) && (
                 <div className="w-full max-w-sm bg-white/70 rounded-xl p-3 mb-4 text-left text-xs text-ink/70 space-y-1">
