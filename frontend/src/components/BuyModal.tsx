@@ -191,7 +191,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
     payingRef.current = true
     setLoading(true); setMsg(null)
     const mcur = def?.currency || ''
-    const openDirectly = method.startsWith('card-') || CRYPTO_METHODS.some(m => m.id === method)
+    const openDirectly = method !== 'funpay'
     const paymentWindow = openDirectly ? window.open('', '_blank') : null
     try {
       const r = await fetch(isCoins ? '/api/create-coins-payment' : '/api/create-payment', {
