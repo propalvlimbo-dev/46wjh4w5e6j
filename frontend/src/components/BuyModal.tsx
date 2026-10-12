@@ -2,19 +2,26 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
 import {
-  X, Tag, Wallet, Check, AlertCircle, QrCode, Bitcoin, Coins,
+  X, Tag, Wallet, Check, AlertCircle, QrCode, Bitcoin, Coins, CreditCard,
   Loader2, ArrowLeft, ExternalLink, CheckCircle2, ChevronRight
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { colorize } from '@/lib/colorize'
 import { fmtDuration, hasOptions, type ProductOption } from '@/lib/options'
 
-type MethodDef = { id: string; label: string; desc: string; icon: any; currency?: string }
+type MethodDef = { id: string; label: string; desc: string; icon: any; currency?: string; apiMethod?: string }
 
 // Способы оплаты — правь под то, что включено в AnyPay
 const MAIN_METHODS: MethodDef[] = [
   { id: 'sbp', label: 'СБП', desc: 'QR-код', icon: QrCode },
   { id: 'funpay', label: 'FunPay', desc: 'В особых случаях', icon: FunPayIcon },
+]
+
+// Иностранные банковские карты / P2P. В AnyPay это method=card + валюта метода.
+const FOREIGN_CARD_METHODS: MethodDef[] = [
+  { id: 'card-uah', label: 'УКР P2P', desc: 'Гривна · 6.9%', icon: CreditCard, currency: 'UAH', apiMethod: 'card' },
+  { id: 'card-uzs', label: 'УЗБ P2P', desc: 'Сум · 4.9%', icon: CreditCard, currency: 'UZS', apiMethod: 'card' },
+  { id: 'card-kgs', label: 'КЫРГ P2P', desc: 'Сом · 6.4%', icon: CreditCard, currency: 'KGS', apiMethod: 'card' },
 ]
 
 // Криптовалюты
@@ -24,7 +31,7 @@ const CRYPTO_METHODS: MethodDef[] = [
   { id: 'eth', label: 'ETH', desc: 'Ethereum', icon: Coins },
 ]
 
-const ALL_METHODS = [...MAIN_METHODS, ...CRYPTO_METHODS]
+const ALL_METHODS = [...MAIN_METHODS, ...FOREIGN_CARD_METHODS, ...CRYPTO_METHODS]
 const COIN_RATE = 10
 const COIN_MIN_RUB = 1
 const COIN_MAX_RUB = 6000
@@ -188,8 +195,8 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(isCoins
-          ? { player: name, amount: coinRubles, method: def?.id || method, method_currency: mcur }
-          : { player: name, product_id: product.id, option_id: selectable ? (selOpt?.id || 0) : 0, promo: promoState.ok ? promo : '', method: def?.id || method, method_currency: mcur })
+          ? { player: name, amount: coinRubles, method: def?.apiMethod || def?.id || method, method_currency: mcur }
+          : { player: name, product_id: product.id, option_id: selectable ? (selOpt?.id || 0) : 0, promo: promoState.ok ? promo : '', method: def?.apiMethod || def?.id || method, method_currency: mcur })
       })
       const data = await r.json()
       if (!r.ok || !data.url) {
@@ -638,6 +645,29 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                           key={m.id}
                           onClick={() => { setMethod(m.id); setMethodsOpen(false) }}
                           className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition ${
+                            active ? 'border-pink bg-pink-soft/30' : 'border-pink-soft/40 hover:border-pink/40'
+                          }`}
+                        >
+                          <Icon size={20} className={active ? 'text-pink' : 'text-ink/40'} />
+                          <div className="font-semibold text-xs leading-tight">{m.label}</div>
+                          <div className="text-[10px] text-ink/50 leading-tight">{m.desc}</div>
+                          {active && <Check size={15} className="absolute top-1.5 right-1.5 text-pink" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <div className="text-[10px] text-ink/40 uppercase tracking-wider px-1 pt-3 pb-1.5">Иностранные карты / P2P</div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {FOREIGN_CARD_METHODS.map(m => {
+                      const Icon = m.icon
+                      const active = method === m.id
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => { setMethod(m.id); setMethodsOpen(false) }}
+                          className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-2.5 text-center transition ${
                             active ? 'border-pink bg-pink-soft/30' : 'border-pink-soft/40 hover:border-pink/40'
                           }`}
                         >
