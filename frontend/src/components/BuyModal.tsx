@@ -484,7 +484,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                   onClick={startPay}
                   className="mt-auto w-full bg-pink text-white py-3.5 rounded-xl font-semibold hover:bg-pink-deep transition disabled:opacity-50 shadow-lg shadow-pink/30"
                 >
-                  {loading ? 'Создаём оплату...' : `Оплатить ${finalPrice} ₽`}
+                  {loading ? 'Создаём оплату...' : isCustomTitle && !titleConfigured ? 'Настроить титул' : `Оплатить ${finalPrice} ₽`}
                 </button>
               </div>
             </div>
