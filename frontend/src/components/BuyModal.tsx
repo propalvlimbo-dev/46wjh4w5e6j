@@ -430,17 +430,6 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                   </div>
                 ))}
 
-                {isCustomTitle && (
-                  <button
-                    type="button"
-                    onClick={() => setTitleCustomizerOpen(true)}
-                    className="w-full rounded-xl border border-pink-soft/60 bg-white/70 px-4 py-3 text-left hover:border-pink transition"
-                  >
-                    <div className="text-sm font-semibold">{titleConfigured ? `Титул: ${titleStyle.text}` : 'Настроить титул'}</div>
-                    <div className="text-xs text-ink/50">Градиент и предпросмотр в стиле Minecraft</div>
-                  </button>
-                )}
-
                 <div className="text-xs text-ink/50 uppercase tracking-wider mb-1">Шаг 2</div>
                 <div className="font-display text-lg sm:text-xl mb-3">Способ оплаты</div>
 
