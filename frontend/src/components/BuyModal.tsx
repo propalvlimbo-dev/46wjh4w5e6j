@@ -90,7 +90,9 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   const [coinRubles, setCoinRubles] = useState<number>(Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Number(product?.coinRubles || 100))))
   const [optionId, setOptionId] = useState<number>(options[0]?.id || 0)
   const [name, setName] = useState('')
-  const [titleStyle, setTitleStyle] = useState<TitleStyle>({ text: '', mode: 'solid', color: '#f05a9a', color2: '#ff9bc5' })
+  const [titleStyle, setTitleStyle] = useState<TitleStyle>({ text: '', mode: 'gradient', color: '#f05a9a', color2: '#ff9bc5' })
+  const [titleCustomizerOpen, setTitleCustomizerOpen] = useState(false)
+  const [titleConfigured, setTitleConfigured] = useState(false)
   const [promo, setPromo] = useState('')
   const [showPromo, setShowPromo] = useState(false)
   const [promoState, setPromoState] = useState<{ ok?: boolean; discount?: number; error?: string; checking?: boolean }>({})
@@ -184,6 +186,10 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
 
   const startPay = async () => {
     const def = resolveMethod(method)
+    if (isCustomTitle && !titleConfigured) {
+      setTitleCustomizerOpen(true)
+      return
+    }
     if ((def?.id || method) === 'funpay') {
       setMsg(null)
       setFunPayWait(3)
@@ -425,7 +431,14 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                 ))}
 
                 {isCustomTitle && (
-                  <TitleCustomizer player={name} value={titleStyle} onChange={setTitleStyle} />
+                  <button
+                    type="button"
+                    onClick={() => setTitleCustomizerOpen(true)}
+                    className="w-full rounded-xl border border-pink-soft/60 bg-white/70 px-4 py-3 text-left hover:border-pink transition"
+                  >
+                    <div className="text-sm font-semibold">{titleConfigured ? `Титул: ${titleStyle.text}` : 'Настроить титул'}</div>
+                    <div className="text-xs text-ink/50">Градиент и предпросмотр в стиле Minecraft</div>
+                  </button>
                 )}
 
                 <div className="text-xs text-ink/50 uppercase tracking-wider mb-1">Шаг 2</div>
@@ -628,6 +641,29 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
           )}
 
           {/* Всплывающее окно выбора способа оплаты */}
+          {titleCustomizerOpen && (
+            <div className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto modal-scroll shadow-2xl" data-lenis-prevent>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-pink-soft/40">
+                  <div className="font-display text-lg">Настройка титула</div>
+                  <button type="button" onClick={() => setTitleCustomizerOpen(false)} className="text-ink/40 hover:text-ink">Закрыть</button>
+                </div>
+                <div className="p-4">
+                  <TitleCustomizer player={name} value={titleStyle} onChange={setTitleStyle} />
+                  <div className="flex gap-2 mt-4">
+                    <button type="button" onClick={() => setTitleCustomizerOpen(false)} className="flex-1 rounded-xl border border-pink-soft/60 py-3 text-sm font-semibold">Отмена</button>
+                    <button
+                      type="button"
+                      disabled={!titleStyle.text || titleStyle.text.length > 10}
+                      onClick={() => { setTitleConfigured(true); setTitleCustomizerOpen(false) }}
+                      className="flex-1 rounded-xl bg-pink py-3 text-sm font-semibold text-white disabled:opacity-50"
+                    >Сохранить титул</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {methodsOpen && (
             <motion.div
               initial={{ opacity: 0 }}
