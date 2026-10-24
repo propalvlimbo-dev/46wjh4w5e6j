@@ -13,6 +13,8 @@ import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.NodeType;
 import net.luckperms.api.node.types.InheritanceNode;
+import net.luckperms.api.node.types.PrefixNode;
+import net.luckperms.api.node.Node;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
@@ -124,6 +126,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
                         "commands TEXT," +
                         "issued BOOLEAN DEFAULT FALSE," +
                         "INDEX idx_player_issued(player, issued))");
+                st.executeUpdate("CREATE TABLE IF NOT EXISTS custom_titles(player VARCHAR(36) PRIMARY KEY, encoded TEXT NOT NULL, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
             }
             mysqlOk = true;
             getLogger().info("MySQL connected");
@@ -221,9 +224,88 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
 
     @EventHandler
     public void join(PlayerJoinEvent e) {
+        loadStoredTitle(e.getPlayer());
         if (!isExcluded(e.getPlayer())) {
             givePending(e.getPlayer().getUniqueId().toString());
         }
+    }
+
+    private static final int CUSTOM_TITLE_PRIORITY = 100;
+
+    private String titleColor(String hex) {
+        if (hex == null || !hex.matches("#[0-9a-fA-F]{6}")) return "";
+        StringBuilder out = new StringBuilder("§x");
+        for (int i = 1; i < 7; i++) out.append('§').append(hex.charAt(i));
+        return out.toString();
+    }
+
+    private String gradientTitle(String text, String first, String second) {
+        if (text == null || text.isEmpty()) return "";
+        try {
+            int r1 = Integer.parseInt(first.substring(1, 3), 16), g1 = Integer.parseInt(first.substring(3, 5), 16), b1 = Integer.parseInt(first.substring(5, 7), 16);
+            int r2 = Integer.parseInt(second.substring(1, 3), 16), g2 = Integer.parseInt(second.substring(3, 5), 16), b2 = Integer.parseInt(second.substring(5, 7), 16);
+            StringBuilder out = new StringBuilder();
+            int count = text.codePointCount(0, text.length()), index = 0;
+            for (int offset = 0; offset < text.length();) {
+                int cp = text.codePointAt(offset);
+                double t = count <= 1 ? 0 : (double) index / (count - 1);
+                String hex = String.format("#%02x%02x%02x", Math.round(r1 + (r2 - r1) * t), Math.round(g1 + (g2 - g1) * t), Math.round(b1 + (b2 - b1) * t));
+                out.append(titleColor(hex)).appendCodePoint(cp);
+                offset += Character.charCount(cp); index++;
+            }
+            return out.toString();
+        } catch (Exception ignored) { return text; }
+    }
+
+    private void applyCustomTitle(Player player, String encoded) {
+        try {
+            String json = new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
+            JsonObject title = JsonParser.parseString(json).getAsJsonObject();
+            String text = title.get("text").getAsString();
+            String mode = title.get("mode").getAsString();
+            String color = title.get("color").getAsString();
+            String color2 = title.get("color2").getAsString();
+            String prefix = "[" + ("solid".equals(mode) ? titleColor(color) + text : gradientTitle(text, color, color2)) + "§r] ";
+            if (luckPerms == null) return;
+            User user = luckPerms.getUserManager().getUser(player.getUniqueId());
+            if (user == null) user = luckPerms.getUserManager().loadUser(player.getUniqueId()).get(3, TimeUnit.SECONDS);
+            if (user == null) return;
+            User finalUser = user;
+            user.data().clear(node -> node instanceof PrefixNode && ((PrefixNode) node).getPriority() == CUSTOM_TITLE_PRIORITY);
+            user.data().add(PrefixNode.builder(prefix, CUSTOM_TITLE_PRIORITY).build());
+            luckPerms.getUserManager().saveUser(finalUser);
+            if (mysqlOk && pool != null) {
+                try (Connection conn = pool.getConnection(); PreparedStatement ps = conn.prepareStatement("INSERT INTO custom_titles(player, encoded) VALUES(?,?) ON DUPLICATE KEY UPDATE encoded=VALUES(encoded), updated_at=CURRENT_TIMESTAMP")) {
+                    ps.setString(1, player.getUniqueId().toString());
+                    ps.setString(2, encoded);
+                    ps.executeUpdate();
+                }
+            }
+        } catch (Exception ex) {
+            getLogger().warning("custom title failed: " + ex.getMessage());
+        }
+    }
+
+    private void loadStoredTitle(Player player) {
+        if (!mysqlOk || pool == null || player == null) return;
+        String uuid = player.getUniqueId().toString();
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            String encoded = null;
+            try (Connection conn = pool.getConnection(); PreparedStatement ps = conn.prepareStatement("SELECT encoded FROM custom_titles WHERE player=?")) {
+                ps.setString(1, uuid);
+                try (ResultSet rs = ps.executeQuery()) { if (rs.next()) encoded = rs.getString(1); }
+            } catch (Exception ex) { getLogger().warning("load title: " + ex.getMessage()); }
+            if (encoded != null) {
+                String value = encoded;
+                Bukkit.getScheduler().runTask(this, () -> applyCustomTitle(player, value));
+            }
+        });
+    }
+
+    private boolean applySpecialCommand(Player player, String command) {
+        if (!command.startsWith("ELYTRIX_TITLE|")) return false;
+        applyCustomTitle(player, command.substring("ELYTRIX_TITLE|".length()));
+        return true;
     }
 
     private void givePending(String uuid) {
@@ -257,7 +339,9 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
                     for (String cmd : cmds.split(";")) {
                         cmd = cmd.trim();
                         if (!cmd.isEmpty()) {
-                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replace("%player%", pl.getName()));
+                            if (!applySpecialCommand(pl, cmd)) {
+                                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replace("%player%", pl.getName()));
+                            }
                         }
                     }
                     issuedIds.add(id);

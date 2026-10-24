@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { colorize } from '@/lib/colorize'
+import TitleCustomizer, { type TitleStyle } from '@/components/TitleCustomizer'
 import { fmtDuration, hasOptions, type ProductOption } from '@/lib/options'
 
 type MethodDef = { id: string; label: string; desc: string; icon: any; currency?: string; apiMethod?: string }
@@ -83,11 +84,13 @@ type PayInfo = {
 
 export default function BuyModal({ product, onClose }: { product: any; onClose: () => void }) {
   const isCoins = !!product?.isCoins
+  const isCustomTitle = product?.name === 'Покупка собственного титула'
   const options: ProductOption[] = (product?.options || []) as ProductOption[]
   const selectable = !isCoins && hasOptions(product)
   const [coinRubles, setCoinRubles] = useState<number>(Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Number(product?.coinRubles || 100))))
   const [optionId, setOptionId] = useState<number>(options[0]?.id || 0)
   const [name, setName] = useState('')
+  const [titleStyle, setTitleStyle] = useState<TitleStyle>({ text: '', mode: 'solid', color: '#f05a9a', color2: '#ff9bc5' })
   const [promo, setPromo] = useState('')
   const [showPromo, setShowPromo] = useState(false)
   const [promoState, setPromoState] = useState<{ ok?: boolean; discount?: number; error?: string; checking?: boolean }>({})
@@ -199,7 +202,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(isCoins
           ? { player: name, amount: coinRubles, method: def?.apiMethod || def?.id || method, method_currency: mcur }
-          : { player: name, product_id: product.id, option_id: selectable ? (selOpt?.id || 0) : 0, promo: promoState.ok ? promo : '', method: def?.apiMethod || def?.id || method, method_currency: mcur })
+          : { player: name, product_id: product.id, option_id: selectable ? (selOpt?.id || 0) : 0, promo: promoState.ok ? promo : '', method: def?.apiMethod || def?.id || method, method_currency: mcur, custom_title: isCustomTitle ? titleStyle : undefined })
       })
       const data = await r.json()
       if (!r.ok || !data.url) {
@@ -220,7 +223,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   }
 
   const sel = resolveMethod(method)
-  const canPay = name.length >= 3 && name.length <= 16 && method !== '' && !loading
+  const canPay = name.length >= 3 && name.length <= 16 && method !== '' && !loading && (!isCustomTitle || (titleStyle.text.length > 0 && titleStyle.text.length <= 10))
   const qrHint = qrHintFor(method)
   const setCoinAmountRub = (v: number) => setCoinRubles(Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Math.round(v || COIN_MIN_RUB))))
 
@@ -420,6 +423,10 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                     )}
                   </div>
                 ))}
+
+                {isCustomTitle && (
+                  <TitleCustomizer player={name} value={titleStyle} onChange={setTitleStyle} />
+                )}
 
                 <div className="text-xs text-ink/50 uppercase tracking-wider mb-1">Шаг 2</div>
                 <div className="font-display text-lg sm:text-xl mb-3">Способ оплаты</div>

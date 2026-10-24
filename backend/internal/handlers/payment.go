@@ -8,6 +8,7 @@ import (
 	"elytrix/internal/config"
 	"elytrix/internal/db"
 	"elytrix/internal/plugin"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -184,6 +185,7 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 			Method         string `json:"method"`
 			MethodCurrency string `json:"method_currency"`
 			OptionID       int    `json:"option_id"`
+			CustomTitle    *struct { Text string `json:"text"`; Mode string `json:"mode"`; Color string `json:"color"`; Color2 string `json:"color2"` } `json:"custom_title"`
 		}
 		if err := c.BodyParser(&body); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "bad body"})
@@ -286,6 +288,18 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 				}
 				promoApplied = code
 			}
+		}
+
+		customCommands := ""
+		if productName == "Покупка собственного титула" && body.CustomTitle != nil {
+			t := body.CustomTitle
+			validMode := t.Mode == "solid" || t.Mode == "gradient" || t.Mode == "shine"
+			validHex := func(v string) bool { return len(v) == 7 && v[0] == '#' }
+			if len([]rune(t.Text)) == 0 || len([]rune(t.Text)) > 10 || !validMode || !validHex(t.Color) || !validHex(t.Color2) {
+				return c.Status(400).JSON(fiber.Map{"error": "Некорректные настройки титула"})
+			}
+			b, _ := json.Marshal(t)
+			customCommands = "ELYTRIX_TITLE|" + base64.RawURLEncoding.EncodeToString(b)
 		}
 
 		orderID := uuid.New().String()
