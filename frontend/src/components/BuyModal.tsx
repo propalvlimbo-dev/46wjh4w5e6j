@@ -229,7 +229,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   }
 
   const sel = resolveMethod(method)
-  const canPay = name.length >= 3 && name.length <= 16 && method !== '' && !loading && (!isCustomTitle || (titleStyle.text.length > 0 && titleStyle.text.length <= 10))
+  const canPay = name.length >= 3 && name.length <= 16 && method !== '' && !loading && (!isCustomTitle || !titleConfigured || (titleStyle.text.length > 0 && titleStyle.text.length <= 10))
   const qrHint = qrHintFor(method)
   const setCoinAmountRub = (v: number) => setCoinRubles(Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Math.round(v || COIN_MIN_RUB))))
 
