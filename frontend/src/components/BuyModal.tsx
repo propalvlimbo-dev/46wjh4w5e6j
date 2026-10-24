@@ -184,9 +184,9 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   const finalPrice = !isCoins && promoState.ok && promoState.discount ? Math.floor(basePrice * (100 - promoState.discount) / 100) : basePrice
   const optionLabel = selectable && selOpt ? selOpt.label : ''
 
-  const startPay = async () => {
+  const startPay = async (forceTitlePay = false) => {
     const def = resolveMethod(method)
-    if (isCustomTitle && !titleConfigured) {
+    if (isCustomTitle && !titleConfigured && !forceTitlePay) {
       setTitleCustomizerOpen(true)
       return
     }
@@ -470,7 +470,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
 
                 <button
                   disabled={!canPay}
-                  onClick={startPay}
+                  onClick={() => startPay()}
                   className="mt-auto w-full bg-pink text-white py-3.5 rounded-xl font-semibold hover:bg-pink-deep transition disabled:opacity-50 shadow-lg shadow-pink/30"
                 >
                   {loading ? 'Создаём оплату...' : isCustomTitle && !titleConfigured ? 'Настроить титул' : `Оплатить ${finalPrice} ₽`}
@@ -644,9 +644,9 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                     <button
                       type="button"
                       disabled={!titleStyle.text || titleStyle.text.length > 10}
-                      onClick={() => { setTitleConfigured(true); setTitleCustomizerOpen(false) }}
+                      onClick={() => { setTitleConfigured(true); setTitleCustomizerOpen(false); startPay(true) }}
                       className="flex-1 rounded-xl bg-pink py-3 text-sm font-semibold text-white disabled:opacity-50"
-                    >Сохранить титул</button>
+                    >Оплатить титул</button>
                   </div>
                 </div>
               </div>
