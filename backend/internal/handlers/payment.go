@@ -313,10 +313,10 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 		for attempt := 0; attempt < 5; attempt++ {
 			anypayPayID = generateAnyPayPayID()
 			res, err := tx.Exec(ctx,
-				`INSERT INTO orders(id,player_name,player_uuid,product_id,product_name,price,status,promo_code,payment_method,anypay_pay_id,option_id,option_label)
-				 VALUES($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9,NULLIF($10,0),NULLIF($11,''))
+				`INSERT INTO orders(id,player_name,player_uuid,product_id,product_name,price,status,promo_code,payment_method,anypay_pay_id,option_id,option_label,commands_override)
+				 VALUES($1,$2,$3,$4,$5,$6,'pending',$7,$8,$9,NULLIF($10,0),NULLIF($11,''),$12)
 				 ON CONFLICT (anypay_pay_id) WHERE anypay_pay_id IS NOT NULL DO NOTHING`,
-				orderID, body.Player, pUUID, body.ProductID, baseProductName, price, promoApplied, method, anypayPayID, optionID, optionLabel)
+				orderID, body.Player, pUUID, body.ProductID, baseProductName, price, promoApplied, method, anypayPayID, optionID, optionLabel, customCommands)
 			if err != nil {
 				return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 			}
