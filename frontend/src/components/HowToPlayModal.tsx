@@ -7,7 +7,7 @@ const steps = [
   {
     icon: Download,
     title: '1. Скачайте Minecraft',
-    text: 'Наш сервер работает на версиях 1.16.5 - 1.21.4. Подойдёт как лицензионная версия, так и пиратская (TLauncher, LegacyLauncher и др.).'
+    text: 'Наш сервер работает на версиях от 1.21.4 до 26.3. Подойдёт как лицензионная версия, так и пиратская (TLauncher, LegacyLauncher и др.).'
   },
   {
     icon: LogIn,

@@ -242,7 +242,10 @@ export default function Products() {
               </Field>
             </div>
 
-            <Field label="Картинка" hint="клик по квадрату — загрузить файл (PNG/JPG/WebP, сожмём сами)">
+            <Field
+              label={cats.find(c => c.id === form.category_id)?.name === 'Наборы' ? 'Скриншот набора' : 'Картинка'}
+              hint={cats.find(c => c.id === form.category_id)?.name === 'Наборы' ? 'для набора: клик по квадрату — загрузить скриншот (PNG/JPG/WebP)' : 'клик по квадрату — загрузить файл (PNG/JPG/WebP, сожмём сами)'}
+            >
               <div className="flex gap-2 items-center">
                 <label className="w-8 h-8 rounded-md border border-border bg-bg overflow-hidden flex items-center justify-center cursor-pointer shrink-0 hover:border-pink/60 transition relative" title="Загрузить файл">
                   {uploading
