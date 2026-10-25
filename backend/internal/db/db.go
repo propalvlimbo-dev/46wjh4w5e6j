@@ -77,6 +77,7 @@ func migrate() error {
 		value TEXT NOT NULL
 	);
 	UPDATE products SET name='Свой Титул' WHERE name='Покупка собственного титула';
+	UPDATE products SET sort=-1000 WHERE name='КАСТОМНЫЙ';
 	INSERT INTO categories(name,sort)
 	SELECT 'Разное', 999
 	WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name='Разное');
@@ -86,7 +87,7 @@ func migrate() error {
 	WHERE c.name='Разное'
 	  AND NOT EXISTS (SELECT 1 FROM products WHERE name='Свой Титул');
 	INSERT INTO products(category_id,name,description,image,price,commands,sort,active)
-	SELECT c.id, 'КАСТОМНЫЙ', '', '', 1299, '', 998, TRUE
+	SELECT c.id, 'КАСТОМНЫЙ', '', '', 1299, '', -1000, TRUE
 	FROM categories c
 	WHERE c.name='Донат'
 	  AND NOT EXISTS (SELECT 1 FROM products WHERE name='КАСТОМНЫЙ');

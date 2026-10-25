@@ -72,7 +72,7 @@ export default function TitleCustomizer({
           className="w-full rounded-xl border border-pink-soft/60 bg-white px-3 py-2.5 text-sm outline-none focus:border-pink"
         />
         <div className={`text-[11px] mt-1 ${valid ? 'text-ink/40' : 'text-red-500'}`}>
-          {value.text.length}/10 {value.text.length === 0 ? 'Введите титул' : !valid ? 'Недопустимый текст' : ''}
+          {value.text.length}/10 {value.text.length === 0 ? (isDonate ? 'Введите префикс' : 'Введите титул') : !valid ? 'Недопустимый текст' : ''}
         </div>
       </div>
 
