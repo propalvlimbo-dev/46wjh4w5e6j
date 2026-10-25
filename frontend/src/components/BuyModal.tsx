@@ -632,12 +632,12 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
           {/* Всплывающее окно выбора способа оплаты */}
           {titleCustomizerOpen && (
             <div className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto modal-scroll shadow-2xl" data-lenis-prevent>
+              <div className="bg-white rounded-2xl w-full max-w-sm max-h-[82vh] overflow-y-auto modal-scroll shadow-2xl" data-lenis-prevent>
                 <div className="flex items-center justify-between px-5 py-4 border-b border-pink-soft/40">
                   <div className="font-display text-lg">Настройка титула</div>
                   <button type="button" aria-label="Закрыть" onClick={() => setTitleCustomizerOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center text-ink/40 hover:text-ink hover:bg-black/5 transition"><X size={18} /></button>
                 </div>
-                <div className="p-4">
+                <div className="p-3">
                   <TitleCustomizer player={name} value={titleStyle} onChange={setTitleStyle} />
                   <div className="flex gap-2 mt-4">
                     <button type="button" onClick={() => setTitleCustomizerOpen(false)} className="flex-1 rounded-xl border border-pink-soft/60 py-3 text-sm font-semibold">Отмена</button>
