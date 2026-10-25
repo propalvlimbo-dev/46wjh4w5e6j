@@ -382,7 +382,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                       return rest ? colorize(rest) : 'Покупка выдаётся на сервере сразу после оплаты.'
                     })()}
                   </div>
-                  <div className="mt-4 pt-4 border-t border-pink-soft/40 text-xs text-ink/50 shrink-0">
+                  <div className="mt-4 pt-4 pb-1 border-t border-pink-soft/40 text-xs text-ink/50 leading-relaxed shrink-0 break-words">
                     Покупка придёт автоматически. Вы должны быть онлайн на сервере.
                   </div>
                 </div>
