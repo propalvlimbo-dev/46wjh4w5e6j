@@ -84,7 +84,7 @@ type PayInfo = {
 
 export default function BuyModal({ product, onClose }: { product: any; onClose: () => void }) {
   const isCoins = !!product?.isCoins
-  const isCustomTitle = product?.name === 'Покупка собственного титула'
+  const isCustomTitle = product?.name === 'Свой Титул'
   const options: ProductOption[] = (product?.options || []) as ProductOption[]
   const selectable = !isCoins && hasOptions(product)
   const [coinRubles, setCoinRubles] = useState<number>(Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Number(product?.coinRubles || 100))))

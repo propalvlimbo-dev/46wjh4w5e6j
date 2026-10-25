@@ -76,14 +76,15 @@ func migrate() error {
 		key TEXT PRIMARY KEY,
 		value TEXT NOT NULL
 	);
+	UPDATE products SET name='Свой Титул' WHERE name='Покупка собственного титула';
 	INSERT INTO categories(name,sort)
 	SELECT 'Разное', 999
 	WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name='Разное');
 	INSERT INTO products(category_id,name,description,image,price,commands,sort,active)
-	SELECT c.id, 'Покупка собственного титула', '', '', 299, '', 999, TRUE
+	SELECT c.id, 'Свой Титул', '', '', 299, '', 999, TRUE
 	FROM categories c
 	WHERE c.name='Разное'
-	  AND NOT EXISTS (SELECT 1 FROM products WHERE name='Покупка собственного титула');
+	  AND NOT EXISTS (SELECT 1 FROM products WHERE name='Свой Титул');
 	CREATE TABLE IF NOT EXISTS product_options(
 		id SERIAL PRIMARY KEY,
 		product_id INT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
