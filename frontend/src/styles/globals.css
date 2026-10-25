@@ -1,9 +1,11 @@
 @font-face {
-  font-family: 'Minecraft RU';
-  src: url('/fonts/minecraft_ru.ttf') format('truetype');
+  font-family: 'Minecraft Rus';
+  src: url('/fonts/minecraft_ru.woff2') format('woff2'),
+       url('/fonts/minecraft_ru.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
+  font-synthesis: none;
 }
 
 @tailwind base;
@@ -11,7 +13,7 @@
 @tailwind utilities;
 
 .font-minecraft {
-  font-family: 'Minecraft RU', monospace;
+  font-family: 'Minecraft Rus', monospace;
   letter-spacing: 0;
   -webkit-font-smoothing: none;
   text-rendering: geometricPrecision;
