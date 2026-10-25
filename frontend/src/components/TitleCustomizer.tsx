@@ -92,8 +92,9 @@ export default function TitleCustomizer({
         <div className="relative z-10">
           <div className="mb-4 text-[10px] uppercase tracking-wider text-white/55">Предпросмотр чата</div>
           <div className="font-minecraft text-[13px] leading-6 font-bold [text-shadow:2px_2px_0_#000,-1px_0_0_#000]">
-            <span className="font-minecraft text-pink">{isDonate ? 'Донат' : ''}</span>{isDonate ? ' ' : ''}<span className="text-white">{player || 'Player'}</span>{' '}
-            <span className="font-minecraft font-black tracking-wide [paint-order:stroke_fill] [-webkit-text-stroke:1px_#09090b] [text-shadow:2px_2px_0_#09090b,-1px_0_0_#09090b]">{titlePreview}</span>
+            {isDonate && <><span className="font-minecraft font-black tracking-wide [paint-order:stroke_fill] [-webkit-text-stroke:1px_#09090b] [text-shadow:2px_2px_0_#09090b,-1px_0_0_#09090b]">{titlePreview}</span>{' '}</>}
+            <span className="text-white">{player || 'Player'}</span>{' '}
+            {!isDonate && <span className="font-minecraft font-black tracking-wide [paint-order:stroke_fill] [-webkit-text-stroke:1px_#09090b] [text-shadow:2px_2px_0_#09090b,-1px_0_0_#09090b]">{titlePreview}</span>}
             <span className="text-white/90">: сообщение</span>
           </div>
         </div>
