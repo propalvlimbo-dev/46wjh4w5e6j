@@ -32,10 +32,10 @@ type ProductOption = {
   commands: string
   active?: boolean
 }
-type Product = { id: number; category_id: number; name: string; price: number; image: string; commands: string; description: string; active: boolean; sort: number; options?: ProductOption[] }
+type Product = { id: number; category_id: number; name: string; price: number; image: string; info_image: string; commands: string; description: string; active: boolean; sort: number; options?: ProductOption[] }
 type Category = { id: number; name: string }
 
-const empty = { category_id: 0, name: '', description: '', image: '', price: 0, commands: '', active: true, options: [] as ProductOption[] }
+const empty = { category_id: 0, name: '', description: '', image: '', info_image: '', price: 0, commands: '', active: true, options: [] as ProductOption[] }
 
 const blankOption = (): ProductOption => ({ id: 0, label: '', price: 0, days: 0, hours: 0, dur: '', duration_text: '', commands: '', active: true })
 
@@ -155,7 +155,7 @@ export default function Products() {
     setCmdOpen(o => o.filter((_, n) => n !== i))
     setForm({ ...form, options: arr })
   }
-  const upload = async (file: File | undefined | null) => {
+  const upload = async (file: File | undefined | null, field: 'image' | 'info_image' = 'image') => {
     if (!file) return
     setUploading(true)
     try {
@@ -165,7 +165,7 @@ export default function Products() {
       const r = await fetch('/safdjuhos8dfuahj/upload-image', { method: 'POST', body: fd, credentials: 'include' })
       if (!r.ok) throw new Error((await r.text()) || 'ошибка загрузки')
       const d = await r.json()
-      setForm((f: any) => ({ ...f, image: d.url }))
+      setForm((f: any) => ({ ...f, [field]: d.url }))
     } catch (e: any) {
       alert('Не удалось загрузить картинку: ' + (e?.message || e))
     } finally {
@@ -258,6 +258,18 @@ export default function Products() {
                 <input value={form.image} onChange={e => setForm({ ...form, image: e.target.value })} className="inp h-8 flex-1" placeholder="URL картинки — или загрузите файл слева" />
               </div>
             </Field>
+
+            {cats.find(c => c.id === form.category_id)?.name === 'Наборы' && (
+              <Field label="Скриншот набора" hint="показывается дополнительно в окне покупки">
+                <div className="flex gap-2 items-center">
+                  <label className="w-8 h-8 rounded-md border border-border bg-bg overflow-hidden flex items-center justify-center cursor-pointer shrink-0 hover:border-pink/60 transition relative" title="Загрузить скриншот">
+                    {form.info_image ? <img src={form.info_image} alt="" className="w-full h-full object-cover" /> : <ImagePlus size={13} className="text-muted/50" />}
+                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e => { upload(e.target.files?.[0], 'info_image'); e.target.value = '' }} />
+                  </label>
+                  <input value={form.info_image || ''} onChange={e => setForm({ ...form, info_image: e.target.value })} className="inp h-8 flex-1" placeholder="URL скриншота или загрузите файл слева" />
+                </div>
+              </Field>
+            )}
 
             <Field label="Описание" hint="1-я строка — под названием в карточке · остальные — в окне покупки">
               <textarea

@@ -11,7 +11,7 @@ import { hasOptions, minOptionPrice, type ProductOption } from '@/lib/options'
 type Category = { id: number; name: string }
 type Product = {
   id: number; category_id: number; name: string; description: string
-  image: string; price: number; options?: ProductOption[]
+  image: string; info_image?: string; price: number; options?: ProductOption[]
   isCoins?: boolean; coinRubles?: number
 }
 

@@ -129,6 +129,7 @@ func migrate() error {
 	);
 	ALTER TABLE orders ADD COLUMN IF NOT EXISTS option_id INT;
 	ALTER TABLE orders ADD COLUMN IF NOT EXISTS option_label TEXT DEFAULT '';
+	ALTER TABLE products ADD COLUMN IF NOT EXISTS info_image TEXT DEFAULT '';
 	ALTER TABLE orders ADD COLUMN IF NOT EXISTS commands_override TEXT DEFAULT '';
 	ALTER TABLE orders ADD COLUMN IF NOT EXISTS coins_amount INT NOT NULL DEFAULT 0;
 	DO $$ BEGIN

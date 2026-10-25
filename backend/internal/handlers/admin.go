@@ -160,6 +160,7 @@ func AdminCreateProduct(c *fiber.Ctx) error {
 		Name        string     `json:"name"`
 		Description string     `json:"description"`
 		Image       string     `json:"image"`
+		InfoImage   string     `json:"info_image"`
 		Price       int        `json:"price"`
 		Commands    string     `json:"commands"`
 		Options     []optionIn `json:"options"`
@@ -174,8 +175,8 @@ func AdminCreateProduct(c *fiber.Ctx) error {
 	}
 	defer tx.Rollback(ctx)
 	var newID int
-	err = tx.QueryRow(ctx, `INSERT INTO products(category_id,name,description,image,price,commands) VALUES($1,$2,$3,$4,$5,$6) RETURNING id`,
-		p.CategoryID, p.Name, p.Description, p.Image, p.Price, p.Commands).Scan(&newID)
+	err = tx.QueryRow(ctx, `INSERT INTO products(category_id,name,description,image,info_image,price,commands) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+		p.CategoryID, p.Name, p.Description, p.Image, p.InfoImage, p.Price, p.Commands).Scan(&newID)
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
@@ -196,6 +197,7 @@ func AdminUpdateProduct(c *fiber.Ctx) error {
 		Name        string     `json:"name"`
 		Description string     `json:"description"`
 		Image       string     `json:"image"`
+		InfoImage   string     `json:"info_image"`
 		Price       int        `json:"price"`
 		Commands    string     `json:"commands"`
 		Active      bool       `json:"active"`
@@ -210,8 +212,8 @@ func AdminUpdateProduct(c *fiber.Ctx) error {
 		return c.Status(500).SendString(err.Error())
 	}
 	defer tx.Rollback(ctx)
-	_, err = tx.Exec(ctx, `UPDATE products SET category_id=$1,name=$2,description=$3,image=$4,price=$5,commands=$6,active=$7 WHERE id=$8`,
-		p.CategoryID, p.Name, p.Description, p.Image, p.Price, p.Commands, p.Active, id)
+	_, err = tx.Exec(ctx, `UPDATE products SET category_id=$1,name=$2,description=$3,image=$4,info_image=$5,price=$6,commands=$7,active=$8 WHERE id=$9`,
+		p.CategoryID, p.Name, p.Description, p.Image, p.InfoImage, p.Price, p.Commands, p.Active, id)
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}

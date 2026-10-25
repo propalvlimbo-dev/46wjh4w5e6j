@@ -366,6 +366,11 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
 
                 <div className="bg-white/70 rounded-2xl p-4 sm:p-5 flex flex-col flex-1 min-h-0">
                   <div className="font-semibold text-sm mb-3 shrink-0">Что вы получите:</div>
+                  {product.info_image && !isCoins && (
+                    <div className="mb-3 rounded-xl overflow-hidden border border-pink-soft/50 bg-white shrink-0">
+                      <img src={product.info_image} alt="Информация о наборе" className="w-full max-h-64 object-contain" />
+                    </div>
+                  )}
                   <div
                     data-lenis-prevent
                     className="allow-select text-sm text-ink/70 leading-relaxed whitespace-pre-line overflow-y-auto modal-scroll flex-1 pr-1 min-h-0"
