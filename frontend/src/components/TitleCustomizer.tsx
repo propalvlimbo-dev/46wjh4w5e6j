@@ -84,12 +84,12 @@ export default function TitleCustomizer({
         {value.mode === 'gradient' && <label className="text-[11px] text-ink/50">Цвет 2<input type="color" value={value.color2} onChange={e => update({ color2: e.target.value })} className="mt-1 h-9 w-full cursor-pointer rounded-lg border-0 bg-transparent" /></label>}
       </div>
 
-      <div className="relative overflow-hidden rounded-xl min-h-[112px] bg-[#202027] px-3 py-3 text-left text-[15px] text-white">
+      <div className="relative overflow-hidden rounded-xl min-h-[104px] bg-[#202027] px-3 py-3 text-left text-[13px] text-white">
         <div className="absolute inset-0 bg-[url('/images/minecraft-chat-bg.png')] bg-cover bg-center scale-110 blur-[5px] opacity-70" />
         <div className="absolute inset-0 bg-black/45" />
         <div className="relative z-10">
           <div className="mb-4 text-[10px] uppercase tracking-wider text-white/55">Предпросмотр чата</div>
-          <div className="font-minecraft leading-7 font-bold [text-shadow:2px_2px_0_#000,-1px_0_0_#000]">
+          <div className="font-minecraft text-[13px] leading-6 font-bold [text-shadow:2px_2px_0_#000,-1px_0_0_#000]">
             <span className="text-white">{player || 'Player'}</span>{' '}
             <span className="font-minecraft font-black tracking-wide [paint-order:stroke_fill] [-webkit-text-stroke:1px_#09090b] [text-shadow:2px_2px_0_#09090b,-1px_0_0_#09090b]">{titlePreview}</span>
             <span className="text-white/90">: сообщение</span>
