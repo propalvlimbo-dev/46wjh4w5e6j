@@ -1,6 +1,21 @@
+@font-face {
+  font-family: 'Minecraft RU';
+  src: url('/fonts/minecraft_ru.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.font-minecraft {
+  font-family: 'Minecraft RU', monospace;
+  letter-spacing: 0;
+  -webkit-font-smoothing: none;
+  text-rendering: geometricPrecision;
+}
 
 html, body { background: #FFF8FB; color: #1A1A1A; }
 * { -webkit-font-smoothing: antialiased; }
