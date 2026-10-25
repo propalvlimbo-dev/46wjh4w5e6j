@@ -85,6 +85,8 @@ type PayInfo = {
 export default function BuyModal({ product, onClose }: { product: any; onClose: () => void }) {
   const isCoins = !!product?.isCoins
   const isCustomTitle = product?.name === 'Свой Титул'
+  const isCustomDonate = product?.name === 'КАСТОМНЫЙ'
+  const isCustomPrefix = isCustomTitle || isCustomDonate
   const options: ProductOption[] = (product?.options || []) as ProductOption[]
   const selectable = !isCoins && hasOptions(product)
   const [coinRubles, setCoinRubles] = useState<number>(Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Number(product?.coinRubles || 100))))
@@ -186,7 +188,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
 
   const startPay = async (forceTitlePay = false) => {
     const def = resolveMethod(method)
-    if (isCustomTitle && !titleConfigured && !forceTitlePay) {
+    if (isCustomPrefix && !titleConfigured && !forceTitlePay) {
       setTitleCustomizerOpen(true)
       return
     }
@@ -208,7 +210,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(isCoins
           ? { player: name, amount: coinRubles, method: def?.apiMethod || def?.id || method, method_currency: mcur }
-          : { player: name, product_id: product.id, option_id: selectable ? (selOpt?.id || 0) : 0, promo: promoState.ok ? promo : '', method: def?.apiMethod || def?.id || method, method_currency: mcur, custom_title: isCustomTitle ? titleStyle : undefined })
+          : { player: name, product_id: product.id, option_id: selectable ? (selOpt?.id || 0) : 0, promo: promoState.ok ? promo : '', method: def?.apiMethod || def?.id || method, method_currency: mcur, custom_title: isCustomPrefix ? titleStyle : undefined })
       })
       const data = await r.json()
       if (!r.ok || !data.url) {
@@ -229,7 +231,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   }
 
   const sel = resolveMethod(method)
-  const canPay = name.length >= 3 && name.length <= 16 && method !== '' && !loading && (!isCustomTitle || !titleConfigured || (titleStyle.text.length > 0 && titleStyle.text.length <= 10))
+  const canPay = name.length >= 3 && name.length <= 16 && method !== '' && !loading && (!isCustomPrefix || !titleConfigured || (titleStyle.text.length > 0 && titleStyle.text.length <= 10))
   const qrHint = qrHintFor(method)
   const setCoinAmountRub = (v: number) => setCoinRubles(Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Math.round(v || COIN_MIN_RUB))))
 
@@ -473,7 +475,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                   onClick={() => startPay()}
                   className="mt-auto w-full bg-pink text-white py-3.5 rounded-xl font-semibold hover:bg-pink-deep transition disabled:opacity-50 shadow-lg shadow-pink/30"
                 >
-                  {loading ? 'Создаём оплату...' : isCustomTitle && !titleConfigured ? 'Настроить титул' : `Оплатить ${finalPrice} ₽`}
+                  {loading ? 'Создаём оплату...' : isCustomPrefix && !titleConfigured ? (isCustomDonate ? 'Настроить префикс' : 'Настроить титул') : `Оплатить ${finalPrice} ₽`}
                 </button>
               </div>
             </div>
@@ -634,11 +636,11 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
             <div className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl w-full max-w-sm max-h-[82vh] overflow-y-auto modal-scroll shadow-2xl" data-lenis-prevent>
                 <div className="flex items-center justify-between px-5 py-4 border-b border-pink-soft/40">
-                  <div className="font-display text-lg">Настройка титула</div>
+                  <div className="font-display text-lg">{isCustomDonate ? 'Настройка префикса' : 'Настройка титула'}</div>
                   <button type="button" aria-label="Закрыть" onClick={() => setTitleCustomizerOpen(false)} className="w-8 h-8 rounded-full flex items-center justify-center text-ink/40 hover:text-ink hover:bg-black/5 transition"><X size={18} /></button>
                 </div>
                 <div className="p-3">
-                  <TitleCustomizer player={name} value={titleStyle} onChange={setTitleStyle} />
+                  <TitleCustomizer player={name} value={titleStyle} onChange={setTitleStyle} isDonate={isCustomDonate} />
                   <div className="flex gap-2 mt-4">
                     <button type="button" onClick={() => setTitleCustomizerOpen(false)} className="flex-1 rounded-xl border border-pink-soft/60 py-3 text-sm font-semibold">Отмена</button>
                     <button
@@ -646,7 +648,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                       disabled={!titleStyle.text || titleStyle.text.length > 10}
                       onClick={() => { setTitleConfigured(true); setTitleCustomizerOpen(false); startPay(true) }}
                       className="flex-1 rounded-xl bg-pink py-3 text-sm font-semibold text-white disabled:opacity-50"
-                    >Оплатить титул</button>
+                    >{isCustomDonate ? 'Оплатить донат' : 'Оплатить титул'}</button>
                   </div>
                 </div>
               </div>

@@ -291,7 +291,7 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 		}
 
 		customCommands := ""
-		if productName == "Свой Титул" && body.CustomTitle != nil {
+		if (productName == "Свой Титул" || productName == "КАСТОМНЫЙ") && body.CustomTitle != nil {
 			t := body.CustomTitle
 			validMode := t.Mode == "solid" || t.Mode == "gradient" || t.Mode == "shine"
 			validHex := func(v string) bool { return len(v) == 7 && v[0] == '#' }

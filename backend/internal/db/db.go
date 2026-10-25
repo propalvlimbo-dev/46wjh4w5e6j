@@ -85,6 +85,11 @@ func migrate() error {
 	FROM categories c
 	WHERE c.name='Разное'
 	  AND NOT EXISTS (SELECT 1 FROM products WHERE name='Свой Титул');
+	INSERT INTO products(category_id,name,description,image,price,commands,sort,active)
+	SELECT c.id, 'КАСТОМНЫЙ', '', '', 1299, '', 998, TRUE
+	FROM categories c
+	WHERE c.name='Донат'
+	  AND NOT EXISTS (SELECT 1 FROM products WHERE name='КАСТОМНЫЙ');
 	CREATE TABLE IF NOT EXISTS product_options(
 		id SERIAL PRIMARY KEY,
 		product_id INT NOT NULL REFERENCES products(id) ON DELETE CASCADE,

@@ -36,10 +36,12 @@ export default function TitleCustomizer({
   player,
   value,
   onChange,
+  isDonate = false,
 }: {
   player: string
   value: TitleStyle
   onChange: (value: TitleStyle) => void
+  isDonate?: boolean
 }) {
   const valid = value.text.length > 0 && value.text.length <= 10 && SAFE_TITLE.test(value.text)
   const titlePreview = useMemo(() => value.mode === 'gradient'
@@ -53,7 +55,7 @@ export default function TitleCustomizer({
       <div className="flex items-center gap-2">
         <Palette size={18} className="text-pink" />
         <div>
-          <div className="font-semibold text-sm">Настройте свой титул</div>
+          <div className="font-semibold text-sm">{isDonate ? 'Настройте префикс доната' : 'Настройте свой титул'}</div>
           <div className="text-xs text-ink/50">До 10 символов · только буквы и цифры</div>
         </div>
       </div>
@@ -66,7 +68,7 @@ export default function TitleCustomizer({
             const next = e.target.value
             if (SAFE_TITLE.test(next)) update({ text: next })
           }}
-          placeholder="Например: Герой"
+          placeholder={isDonate ? 'Например: VIP' : 'Например: Герой'}
           className="w-full rounded-xl border border-pink-soft/60 bg-white px-3 py-2.5 text-sm outline-none focus:border-pink"
         />
         <div className={`text-[11px] mt-1 ${valid ? 'text-ink/40' : 'text-red-500'}`}>
@@ -90,7 +92,7 @@ export default function TitleCustomizer({
         <div className="relative z-10">
           <div className="mb-4 text-[10px] uppercase tracking-wider text-white/55">Предпросмотр чата</div>
           <div className="font-minecraft text-[13px] leading-6 font-bold [text-shadow:2px_2px_0_#000,-1px_0_0_#000]">
-            <span className="text-white">{player || 'Player'}</span>{' '}
+            <span className="font-minecraft text-pink">{isDonate ? 'Донат' : ''}</span>{isDonate ? ' ' : ''}<span className="text-white">{player || 'Player'}</span>{' '}
             <span className="font-minecraft font-black tracking-wide [paint-order:stroke_fill] [-webkit-text-stroke:1px_#09090b] [text-shadow:2px_2px_0_#09090b,-1px_0_0_#09090b]">{titlePreview}</span>
             <span className="text-white/90">: сообщение</span>
           </div>
