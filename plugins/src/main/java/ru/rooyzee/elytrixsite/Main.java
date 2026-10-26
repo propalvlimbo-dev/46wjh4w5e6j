@@ -142,7 +142,6 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
                         "commands TEXT," +
                         "issued BOOLEAN DEFAULT FALSE," +
                         "INDEX idx_player_issued(player, issued))");
-                st.executeUpdate("CREATE TABLE IF NOT EXISTS custom_titles(player VARCHAR(36) PRIMARY KEY, encoded TEXT NOT NULL, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)");
             }
             mysqlOk = true;
             getLogger().info("MySQL connected");
@@ -256,7 +255,6 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
 
     @EventHandler
     public void join(PlayerJoinEvent e) {
-        loadStoredTitle(e.getPlayer());
         if (!isExcluded(e.getPlayer())) {
             givePending(e.getPlayer().getUniqueId().toString());
         }
@@ -321,32 +319,9 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
                 user.data().add(SuffixNode.builder(suffix, CUSTOM_TITLE_PRIORITY).build());
             }
             luckPerms.getUserManager().saveUser(finalUser);
-            if (mysqlOk && pool != null) {
-                try (Connection conn = pool.getConnection(); PreparedStatement ps = conn.prepareStatement("INSERT INTO custom_titles(player, encoded) VALUES(?,?) ON DUPLICATE KEY UPDATE encoded=VALUES(encoded), updated_at=CURRENT_TIMESTAMP")) {
-                    ps.setString(1, player.getUniqueId().toString());
-                    ps.setString(2, encoded);
-                    ps.executeUpdate();
-                }
-            }
         } catch (Exception ex) {
             getLogger().warning("custom title failed: " + ex.getMessage());
         }
-    }
-
-    private void loadStoredTitle(Player player) {
-        if (!mysqlOk || pool == null || player == null) return;
-        String uuid = player.getUniqueId().toString();
-        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-            String encoded = null;
-            try (Connection conn = pool.getConnection(); PreparedStatement ps = conn.prepareStatement("SELECT encoded FROM custom_titles WHERE player=?")) {
-                ps.setString(1, uuid);
-                try (ResultSet rs = ps.executeQuery()) { if (rs.next()) encoded = rs.getString(1); }
-            } catch (Exception ex) { getLogger().warning("load title: " + ex.getMessage()); }
-            if (encoded != null) {
-                String value = encoded;
-                Bukkit.getScheduler().runTask(this, () -> applyCustomTitle(player, value));
-            }
-        });
     }
 
     private boolean applySpecialCommand(Player player, String command) {
