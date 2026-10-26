@@ -149,3 +149,85 @@ input, textarea {
   background-color: rgba(255, 182, 213, 0.35); /* если скин не загрузился */
   backface-visibility: hidden;
 }
+
+/* ===== HALLOWEEN SEASONAL DECORATION =====
+   Remove this block together with HalloweenAtmosphere.tsx after Halloween. */
+.halloween-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.halloween-moon {
+  position: absolute;
+  top: 7rem;
+  right: 7vw;
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: rgba(255, 185, 107, 0.16);
+  box-shadow: 0 0 42px rgba(255, 146, 87, 0.18);
+}
+
+.halloween-ghost {
+  position: absolute;
+  color: #d98bba;
+  opacity: 0.22;
+  filter: drop-shadow(0 5px 12px rgba(190, 84, 141, 0.15));
+  animation: halloween-float 15s ease-in-out infinite;
+}
+
+.halloween-ghost svg {
+  display: block;
+  width: 58px;
+  height: 58px;
+  fill: rgba(255, 239, 247, 0.7);
+}
+
+.halloween-ghost-one { top: 22%; left: -2rem; animation-delay: -2s; }
+.halloween-ghost-two {
+  top: 48%; right: 1.8rem; transform: scale(0.68); opacity: 0.16;
+  animation-name: halloween-float-small; animation-duration: 18s; animation-delay: -9s;
+}
+.halloween-ghost-three {
+  top: 76%; left: 19%; transform: scale(0.46); opacity: 0.12;
+  animation-name: halloween-float-tiny; animation-duration: 21s; animation-delay: -13s;
+}
+
+.halloween-spark {
+  position: absolute;
+  color: #f5a35d;
+  opacity: 0.34;
+  animation: halloween-twinkle 3.8s ease-in-out infinite;
+}
+.halloween-spark-one { top: 17%; right: 15%; }
+.halloween-spark-two { top: 30%; left: 12%; animation-delay: -1.8s; }
+
+@keyframes halloween-float {
+  0%, 100% { margin-left: 0; transform: translateY(0) rotate(-4deg); }
+  50% { margin-left: 18px; transform: translateY(-20px) rotate(5deg); }
+}
+@keyframes halloween-float-small {
+  0%, 100% { margin-left: 0; transform: translateY(0) rotate(4deg) scale(0.68); }
+  50% { margin-left: -14px; transform: translateY(-16px) rotate(-5deg) scale(0.68); }
+}
+@keyframes halloween-float-tiny {
+  0%, 100% { margin-left: 0; transform: translateY(0) rotate(-3deg) scale(0.46); }
+  50% { margin-left: 12px; transform: translateY(-12px) rotate(4deg) scale(0.46); }
+}
+@keyframes halloween-twinkle {
+  0%, 100% { opacity: 0.16; transform: scale(0.8) rotate(0deg); }
+  50% { opacity: 0.5; transform: scale(1.08) rotate(18deg); }
+}
+
+@media (max-width: 640px) {
+  .halloween-moon { top: 6rem; right: 1.5rem; width: 42px; height: 42px; }
+  .halloween-ghost-one { top: 24%; left: -1.5rem; }
+  .halloween-ghost-two { right: -1rem; }
+  .halloween-ghost-three { left: 8%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .halloween-ghost, .halloween-spark { animation: none; }
+}

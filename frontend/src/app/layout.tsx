@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Unbounded } from 'next/font/google'
 import SmoothScroll from '@/components/SmoothScroll'
 import Maintenance from '@/components/Maintenance'
+import HalloweenAtmosphere from '@/components/HalloweenAtmosphere'
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -96,6 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ru" className={`${inter.variable} ${unbounded.variable}`}>
       <body className="font-sans">
+        <HalloweenAtmosphere />
         <Maintenance>
           <SmoothScroll>{children}</SmoothScroll>
         </Maintenance>
