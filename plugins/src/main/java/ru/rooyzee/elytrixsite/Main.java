@@ -300,7 +300,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             String styled = "solid".equals(mode) ? titleColor(color) + text : gradientTitle(text, color, color2);
             boolean donatePrefix = title.has("kind") && "donate".equals(title.get("kind").getAsString());
             String prefix = styled + "§r ";
-            String suffix = " §r[" + styled + "§r]";
+            String suffix = " §r" + styled + "§r";
             if (luckPerms == null) return;
             User user = luckPerms.getUserManager().getUser(player.getUniqueId());
             if (user == null) user = luckPerms.getUserManager().loadUser(player.getUniqueId()).get(3, TimeUnit.SECONDS);
