@@ -14,6 +14,7 @@ import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.NodeType;
 import net.luckperms.api.node.types.InheritanceNode;
 import net.luckperms.api.node.types.PrefixNode;
+import net.luckperms.api.node.types.SuffixNode;
 import net.luckperms.api.node.Node;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -296,14 +297,23 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             String mode = title.get("mode").getAsString();
             String color = title.get("color").getAsString();
             String color2 = title.get("color2").getAsString();
-            String prefix = "[" + ("solid".equals(mode) ? titleColor(color) + text : gradientTitle(text, color, color2)) + "§r] ";
+            String styled = "solid".equals(mode) ? titleColor(color) + text : gradientTitle(text, color, color2);
+            boolean donatePrefix = title.has("kind") && "donate".equals(title.get("kind").getAsString());
+            String prefix = styled + "§r ";
+            String suffix = " §r[" + styled + "§r]";
             if (luckPerms == null) return;
             User user = luckPerms.getUserManager().getUser(player.getUniqueId());
             if (user == null) user = luckPerms.getUserManager().loadUser(player.getUniqueId()).get(3, TimeUnit.SECONDS);
             if (user == null) return;
             User finalUser = user;
-            user.data().clear(node -> node instanceof PrefixNode && ((PrefixNode) node).getPriority() == CUSTOM_TITLE_PRIORITY);
-            user.data().add(PrefixNode.builder(prefix, CUSTOM_TITLE_PRIORITY).build());
+            user.data().clear(node ->
+                (node instanceof PrefixNode && ((PrefixNode) node).getPriority() == CUSTOM_TITLE_PRIORITY) ||
+                (node instanceof SuffixNode && ((SuffixNode) node).getPriority() == CUSTOM_TITLE_PRIORITY));
+            if (donatePrefix) {
+                user.data().add(PrefixNode.builder(prefix, CUSTOM_TITLE_PRIORITY).build());
+            } else {
+                user.data().add(SuffixNode.builder(suffix, CUSTOM_TITLE_PRIORITY).build());
+            }
             luckPerms.getUserManager().saveUser(finalUser);
             if (mysqlOk && pool != null) {
                 try (Connection conn = pool.getConnection(); PreparedStatement ps = conn.prepareStatement("INSERT INTO custom_titles(player, encoded) VALUES(?,?) ON DUPLICATE KEY UPDATE encoded=VALUES(encoded), updated_at=CURRENT_TIMESTAMP")) {

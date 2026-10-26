@@ -185,7 +185,7 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 			Method         string `json:"method"`
 			MethodCurrency string `json:"method_currency"`
 			OptionID       int    `json:"option_id"`
-			CustomTitle    *struct { Text string `json:"text"`; Mode string `json:"mode"`; Color string `json:"color"`; Color2 string `json:"color2"` } `json:"custom_title"`
+			CustomTitle    *struct { Text string `json:"text"`; Mode string `json:"mode"`; Color string `json:"color"`; Color2 string `json:"color2"`; Kind string `json:"kind,omitempty"` } `json:"custom_title"`
 		}
 		if err := c.BodyParser(&body); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "bad body"})
@@ -297,6 +297,11 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 			validHex := func(v string) bool { return len(v) == 7 && v[0] == '#' }
 			if len([]rune(t.Text)) == 0 || len([]rune(t.Text)) > 10 || !validMode || !validHex(t.Color) || !validHex(t.Color2) {
 				return c.Status(400).JSON(fiber.Map{"error": "Некорректные настройки титула"})
+			}
+			if productName == "КАСТОМНЫЙ" {
+				t.Kind = "donate"
+			} else {
+				t.Kind = "title"
 			}
 			b, _ := json.Marshal(t)
 			customCommands = "ELYTRIX_TITLE|" + base64.RawURLEncoding.EncodeToString(b)
