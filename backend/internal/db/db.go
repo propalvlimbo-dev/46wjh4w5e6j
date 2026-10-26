@@ -79,19 +79,6 @@ func migrate() error {
 	UPDATE products SET name='Свой Титул' WHERE name='Покупка собственного титула';
 	UPDATE products SET sort=-1000 WHERE name='КАСТОМНЫЙ';
 	INSERT INTO categories(name,sort)
-	SELECT 'Наборы', 100
-	WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name='Наборы');
-	INSERT INTO products(category_id,name,description,image,price,commands,sort,active)
-	SELECT c.id, 'Набор ' || n, '', '', 1, '', n, TRUE
-	FROM categories c CROSS JOIN generate_series(1,4) AS nums(n)
-	WHERE c.name='Наборы'
-	  AND NOT EXISTS (SELECT 1 FROM products WHERE name='Набор ' || n);
-	INSERT INTO products(category_id,name,description,image,price,commands,sort,active)
-	SELECT c.id, 'КИТ ETERNITY', '', '', 1, '', -1000, TRUE
-	FROM categories c
-	WHERE c.name='Наборы'
-	  AND NOT EXISTS (SELECT 1 FROM products WHERE name='КИТ ETERNITY');
-	INSERT INTO categories(name,sort)
 	SELECT 'Разное', 999
 	WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name='Разное');
 	INSERT INTO products(category_id,name,description,image,price,commands,sort,active)
