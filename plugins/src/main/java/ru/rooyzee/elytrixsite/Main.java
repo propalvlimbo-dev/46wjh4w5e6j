@@ -9,7 +9,6 @@ import com.sun.net.httpserver.HttpServer;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import net.luckperms.api.LuckPerms;
-import net.milkbowl.vault.economy.Economy;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.NodeType;
@@ -66,7 +65,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
     private String secret;
     private boolean mysqlOk = false;
     private LuckPerms luckPerms;
-    private Economy economy;
+    private Object economy;
     private long lastRequest = 0;
 
     @Override
@@ -90,9 +89,11 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
 
     private void setupEconomy() {
         try {
-            org.bukkit.plugin.RegisteredServiceProvider<Economy> provider = Bukkit.getServicesManager().getRegistration(Economy.class);
+            Class<?> economyClass = Class.forName("net.milkbowl.vault.economy.Economy");
+            org.bukkit.plugin.RegisteredServiceProvider<?> provider = Bukkit.getServicesManager().getRegistration((Class) economyClass);
             economy = provider == null ? null : provider.getProvider();
-            getLogger().info(economy == null ? "Vault economy unavailable" : "Vault economy hook enabled: " + economy.getName());
+            String name = economy == null ? "" : String.valueOf(economy.getClass().getMethod("getName").invoke(economy));
+            getLogger().info(economy == null ? "Vault economy unavailable" : "Vault economy hook enabled: " + name);
         } catch (Exception ex) {
             economy = null;
             getLogger().warning("Vault economy hook unavailable: " + ex.getMessage());
@@ -451,7 +452,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
         for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
             if (player == null || player.getUniqueId() == null || !isAllowedByGroup(player.getUniqueId())) continue;
             double balance;
-            try { balance = economy.getBalance(player); } catch (Exception ignored) { continue; }
+            try { balance = ((Number) economy.getClass().getMethod("getBalance", OfflinePlayer.class).invoke(economy, player)).doubleValue(); } catch (Exception ignored) { continue; }
             if (balance <= 0) continue;
             JsonObject row = new JsonObject();
             row.addProperty("name", player.getName() == null ? player.getUniqueId().toString() : player.getName());
