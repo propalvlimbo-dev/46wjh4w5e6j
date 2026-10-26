@@ -23,6 +23,11 @@ type topPlayer struct {
 	Seconds int64  `json:"seconds"` // наиграно на сервере
 }
 
+type topBalance struct {
+	Name    string  `json:"name"`
+	Balance float64 `json:"balance"`
+}
+
 type topClan struct {
 	Name         string  `json:"name"`
 	Owner        string  `json:"owner"`
@@ -34,6 +39,8 @@ type topClan struct {
 type topPayload struct {
 	Donators   []topDonator `json:"donators"`
 	Players    []topPlayer  `json:"players"`
+	Balances   []topBalance `json:"balances"`
+	BalancesOK bool         `json:"balances_ok"`
 	PlayersOK  bool         `json:"players_ok"` // плагин был доступен
 	Clans      []topClan    `json:"clans"`
 	ClansOK    bool         `json:"clans_ok"` // ElytrixClans export был доступен
@@ -66,6 +73,7 @@ func GetTop(cfg *config.Config) fiber.Handler {
 		payload := topPayload{
 			Donators:   []topDonator{},
 			Players:    []topPlayer{},
+			Balances:   []topBalance{},
 			Clans:      []topClan{},
 			ServerTime: time.Now().UTC().Format(time.RFC3339),
 		}
@@ -84,6 +92,15 @@ func GetTop(cfg *config.Config) fiber.Handler {
 				var d topDonator
 				rows.Scan(&d.Name, &d.Amount, &d.Orders)
 				payload.Donators = append(payload.Donators, d)
+			}
+		}
+
+		// ——— Топ по балансу Vault / экономики сервера ———
+		if res, status, perr := plugin.RequestJSON(cfg.PluginURL, cfg.PluginSecret, "/api/leaderboard-balance", map[string]string{}); perr == nil && status == 200 {
+			var list []topBalance
+			if json.Unmarshal([]byte(res), &list) == nil {
+				payload.Balances = list
+				payload.BalancesOK = true
 			}
 		}
 

@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Crown, RefreshCw, ServerCog, Shield, Timer, X } from 'lucide-react'
+import { Crown, RefreshCw, ServerCog, Shield, Timer, Coins, X } from 'lucide-react'
 
 // ============================================================
 // Топы сервера — модалка из шапки:
@@ -15,9 +15,10 @@ import { Crown, RefreshCw, ServerCog, Shield, Timer, X } from 'lucide-react'
 
 type Donator = { name: string; amount: number; orders: number }
 type Player = { name: string; seconds: number }
+type Balance = { name: string; balance: number }
 type Clan = { name: string; owner?: string; exp: number; level?: number; members_count?: number }
 type Row = { name: string; stat: string; extra?: string; kind?: 'player' | 'clan' }
-type TopData = { donators?: Donator[]; players?: Player[]; players_ok?: boolean; clans?: Clan[]; clans_ok?: boolean; server_time?: string }
+type TopData = { donators?: Donator[]; balances?: Balance[]; balances_ok?: boolean; players?: Player[]; players_ok?: boolean; clans?: Clan[]; clans_ok?: boolean; server_time?: string }
 
 // SKIN_V — версия рендера голов: меняем соль → старые кэши браузеров (в т.ч.
 // «24 часа» от прошлых версий) сами аннулируются без hard reload у игроков.
@@ -67,6 +68,10 @@ function Head3D({ name, size = 36, nonce }: { name: string; size?: number; nonce
 
 function fmtMoney(n: number) {
   return n.toLocaleString('ru-RU') + ' ₽'
+}
+
+function fmtBalance(n: number) {
+  return `${n.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} монет`
 }
 
 function fmtPlaytime(sec: number) {
@@ -148,6 +153,7 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
   }, [open, tab, loading, data, updateFade])
 
   const donators = data?.donators || []
+  const balances = data?.balances || []
   const players = data?.players || []
   const clans = data?.clans || []
 
@@ -155,6 +161,8 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
     tab === 0
       ? donators.slice(0, 10).map(d => ({ name: d.name, stat: fmtMoney(d.amount), extra: `${d.orders} ${plural(d.orders, 'покупка', 'покупки', 'покупок')}`, kind: 'player' }))
       : tab === 1
+      ? balances.slice(0, 10).map(b => ({ name: b.name, stat: fmtBalance(b.balance), kind: 'player' }))
+      : tab === 2
       ? players.slice(0, 10).map(p => ({ name: p.name, stat: fmtPlaytime(p.seconds), kind: 'player' }))
       : clans.slice(0, 10).map(c => ({
           name: c.name,
@@ -214,8 +222,8 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
               </div>
 
               {/* табы: текстовые, с розовым подчёркиванием активного */}
-              <div className="mt-4 grid grid-cols-3 gap-1 sm:gap-3 border-b border-ink/[0.07] -mb-px">
-                {(['Топ донатеров', 'Топ активных', 'Топы кланов'] as const).map((label, i) => (
+              <div className="mt-4 grid grid-cols-4 gap-1 sm:gap-2 border-b border-ink/[0.07] -mb-px">
+                {(['Топ донатеров', 'Топ по балансу', 'Топ активных', 'Топы кланов'] as const).map((label, i) => (
                   <button
                     key={label}
                     onClick={() => { setTab(i); listRef.current?.scrollTo({ top: 0 }) }}
@@ -226,6 +234,8 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
                     {i === 0 ? (
                       <Crown size={13} className={tab === i ? 'text-pink' : ''} />
                     ) : i === 1 ? (
+                      <Coins size={13} className={tab === i ? 'text-pink' : ''} />
+                    ) : i === 2 ? (
                       <Timer size={13} className={tab === i ? 'text-pink' : ''} />
                     ) : (
                       <Shield size={13} className={tab === i ? 'text-pink' : ''} />
@@ -263,7 +273,7 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
                       </div>
                     ) : rows.length === 0 ? (
                       <div className="text-center py-20 px-8">
-                        {tab === 2 ? (
+                        {tab === 3 ? (
                           <>
                             <Shield size={24} className="mx-auto text-pink/50 mb-3" />
                             <div className="text-[13px] text-ink/50 leading-relaxed">
@@ -272,7 +282,7 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
                               Топ считается только по опыту клана.
                             </div>
                           </>
-                        ) : tab === 1 && data && !data.players_ok ? (
+                        ) : tab === 2 && data && !data.players_ok ? (
                           <>
                             <ServerCog size={24} className="mx-auto text-pink/50 mb-3" />
                             <div className="text-[13px] text-ink/50 leading-relaxed">
@@ -329,8 +339,8 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
             </div>
 
             <div className="shrink-0 px-5 py-2.5 border-t border-ink/[0.06] flex items-center justify-between text-[10.5px] text-ink/30">
-              <span>{tab === 2 ? 'Считается только опыт клана' : 'Топ-10 · обновляется каждые 5 минут'}</span>
-              <span className="hidden sm:inline">{tab === 2 ? 'ElytrixClans' : 'наведи на голову ;)'}</span>
+              <span>{tab === 3 ? 'Считается только опыт клана' : tab === 1 ? 'Vault / экономика сервера' : 'Топ-10 · обновляется каждые 5 минут'}</span>
+              <span className="hidden sm:inline">{tab === 3 ? 'ElytrixClans' : tab === 1 ? '/eco' : 'наведи на голову ;)'}</span>
             </div>
           </motion.div>
         </motion.div>

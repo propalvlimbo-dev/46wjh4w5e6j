@@ -3,7 +3,7 @@ version: 1.0
 main: ru.rooyzee.elytrixsite.Main
 api-version: 1.16
 author: rooyzee
-softdepend: [LuckPerms]
+softdepend: [LuckPerms, Vault]
 
 commands:
   elytrixsite:

@@ -9,6 +9,7 @@ import com.sun.net.httpserver.HttpServer;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import net.luckperms.api.LuckPerms;
+import net.milkbowl.vault.economy.Economy;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.NodeType;
@@ -65,6 +66,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
     private String secret;
     private boolean mysqlOk = false;
     private LuckPerms luckPerms;
+    private Economy economy;
     private long lastRequest = 0;
 
     @Override
@@ -72,6 +74,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
         saveDefaultConfig();
         setupMySQL();
         setupLuckPerms();
+        setupEconomy();
         Bukkit.getPluginManager().registerEvents(this, this);
         if (getCommand("elytrixsite") != null) {
             getCommand("elytrixsite").setExecutor(this);
@@ -83,6 +86,17 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
     public void onDisable() {
         if (server != null) server.stop(0);
         if (pool != null) pool.close();
+    }
+
+    private void setupEconomy() {
+        try {
+            org.bukkit.plugin.RegisteredServiceProvider<Economy> provider = Bukkit.getServicesManager().getRegistration(Economy.class);
+            economy = provider == null ? null : provider.getProvider();
+            getLogger().info(economy == null ? "Vault economy unavailable" : "Vault economy hook enabled: " + economy.getName());
+        } catch (Exception ex) {
+            economy = null;
+            getLogger().warning("Vault economy hook unavailable: " + ex.getMessage());
+        }
     }
 
     private void setupLuckPerms() {
@@ -374,6 +388,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             server = HttpServer.create(new InetSocketAddress(port), 0);
 
             server.createContext("/api/leaderboard-playtime", ex -> handle(ex, body -> buildPlaytimeTop().toString()));
+            server.createContext("/api/leaderboard-balance", ex -> handle(ex, body -> buildBalanceTop().toString()));
             server.createContext("/api/clans/top", ex -> handle(ex, body -> buildClanTop().toString()));
 
             server.createContext("/api/check-player", ex -> handle(ex, body -> {
@@ -427,6 +442,26 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             server = null;
             getLogger().severe("API error: " + e.getMessage());
         }
+    }
+
+    private JsonArray buildBalanceTop() {
+        JsonArray top = new JsonArray();
+        if (economy == null || luckPerms == null) return top;
+        List<JsonObject> rows = new ArrayList<>();
+        for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
+            if (player == null || player.getUniqueId() == null || !isAllowedByGroup(player.getUniqueId())) continue;
+            double balance;
+            try { balance = economy.getBalance(player); } catch (Exception ignored) { continue; }
+            if (balance <= 0) continue;
+            JsonObject row = new JsonObject();
+            row.addProperty("name", player.getName() == null ? player.getUniqueId().toString() : player.getName());
+            row.addProperty("balance", Math.round(balance * 100.0) / 100.0);
+            rows.add(row);
+        }
+        rows.sort((a, b) -> Double.compare(b.get("balance").getAsDouble(), a.get("balance").getAsDouble()));
+        int limit = Math.max(1, getConfig().getInt("playtime.limit", 10));
+        rows.stream().limit(limit).forEach(top::add);
+        return top;
     }
 
     private JsonArray buildPlaytimeTop() {
