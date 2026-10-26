@@ -231,3 +231,74 @@ input, textarea {
 @media (prefers-reduced-motion: reduce) {
   .halloween-ghost, .halloween-spark { animation: none; }
 }
+
+/* ===== HALLOWEEN HERO OVERLAY =====
+   Remove this block and the halloween-* additions in Hero.tsx to restore the regular hero. */
+.halloween-hero {
+  isolation: isolate;
+  color: #fff;
+  background:
+    radial-gradient(circle at 78% 35%, rgba(255, 141, 34, 0.22), transparent 23%),
+    radial-gradient(circle at 18% 68%, rgba(91, 43, 119, 0.32), transparent 31%),
+    linear-gradient(115deg, #090e16 0%, #101720 52%, #151016 100%);
+}
+
+.halloween-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.26;
+  background-image:
+    linear-gradient(115deg, transparent 48%, rgba(255, 255, 255, 0.18) 49%, transparent 50%),
+    linear-gradient(65deg, transparent 48%, rgba(255, 255, 255, 0.12) 49%, transparent 50%);
+  background-size: 190px 190px, 220px 220px;
+  mask-image: linear-gradient(to bottom, #000, transparent 82%);
+}
+
+.halloween-hero .blob { opacity: 0.18; }
+.halloween-hero .gradient-text {
+  background: linear-gradient(90deg, #ffc15e, #ff7b19);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.halloween-web {
+  position: absolute;
+  top: -12%;
+  right: -4%;
+  width: 420px;
+  height: 420px;
+  opacity: 0.2;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, transparent 0 28px, rgba(255, 190, 116, 0.4) 29px 30px),
+    repeating-conic-gradient(from 8deg, transparent 0 15deg, rgba(255, 190, 116, 0.4) 16deg 17deg);
+  mask-image: radial-gradient(circle, #000 0 54%, transparent 73%);
+  transform: rotate(12deg);
+}
+
+.halloween-hero-badge {
+  position: absolute;
+  top: 8.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  color: #ffc66b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+  text-shadow: 0 0 18px rgba(255, 144, 30, 0.6);
+}
+
+.halloween-hero-secondary {
+  color: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 640px) {
+  .halloween-hero-badge { top: 7rem; font-size: 8px; letter-spacing: 0.1em; }
+  .halloween-web { width: 260px; height: 260px; right: -18%; top: 2%; }
+}

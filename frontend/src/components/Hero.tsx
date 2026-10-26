@@ -38,7 +38,9 @@ export default function Hero() {
   }
 
   return (
-    <section className="relative min-h-screen flex items-center px-4 sm:px-8 pt-28 sm:pt-32 pb-10 overflow-hidden">
+    <section className="halloween-hero relative min-h-screen flex items-center px-4 sm:px-8 pt-28 sm:pt-32 pb-10 overflow-hidden">
+      <div className="halloween-web" aria-hidden="true" />
+      <div className="halloween-hero-badge">✦ HALLOWEEN SEASON · ELYTRIX ✦</div>
       <div className="blob bg-pink-soft w-[400px] sm:w-[500px] h-[400px] sm:h-[500px] -top-40 -left-40" />
       <div className="blob bg-pink w-[400px] sm:w-[500px] h-[400px] sm:h-[500px] bottom-[-100px] right-[-80px]" />
 
@@ -48,7 +50,7 @@ export default function Hero() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-tight"
+            className="font-display text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-tight"
           >
             Начни свою <span className="gradient-text">историю</span> на Elytrix
           </motion.h1>
@@ -56,7 +58,7 @@ export default function Hero() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.15 }}
-            className="mt-5 sm:mt-6 text-base sm:text-lg text-ink/70 max-w-md mx-auto md:mx-0"
+            className="mt-5 sm:mt-6 text-base sm:text-lg text-white/70 max-w-md mx-auto md:mx-0"
           >
             Уютный сервер, крутые привилегии и мгновенная выдача покупок прямо на сервер.
           </motion.p>
@@ -71,7 +73,7 @@ export default function Hero() {
             </a>
             <button
               onClick={copyIP}
-              className="glass px-7 py-3 rounded-xl font-semibold hover:bg-white/80 transition"
+              className="halloween-hero-secondary px-7 py-3 rounded-xl font-semibold hover:bg-white/15 transition"
             >
               Скопировать IP
             </button>
