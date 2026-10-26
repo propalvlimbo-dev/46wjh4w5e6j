@@ -275,7 +275,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
     private void applyCustomTitle(Player player, String encoded) {
         try {
             String json = new String(Base64.getUrlDecoder().decode(encoded), StandardCharsets.UTF_8);
-            JsonObject title = JsonParser.parseString(json).getAsJsonObject();
+            JsonObject title = new JsonParser().parse(json).getAsJsonObject();
             String text = title.get("text").getAsString();
             String mode = title.get("mode").getAsString();
             String color = title.get("color").getAsString();
