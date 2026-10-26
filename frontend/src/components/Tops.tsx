@@ -223,7 +223,7 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
 
               {/* табы: текстовые, с розовым подчёркиванием активного */}
               <div className="mt-4 grid grid-cols-4 gap-1 sm:gap-2 border-b border-ink/[0.07] -mb-px">
-                {(['Топ донатеров', 'Топ по балансу', 'Топ активных', 'Топы кланов'] as const).map((label, i) => (
+                {(['Донатеры', 'Монеты', 'Активные', 'Кланы'] as const).map((label, i) => (
                   <button
                     key={label}
                     onClick={() => { setTab(i); listRef.current?.scrollTo({ top: 0 }) }}
@@ -339,7 +339,7 @@ export default function Tops({ open, onClose }: { open: boolean; onClose: () => 
             </div>
 
             <div className="shrink-0 px-5 py-2.5 border-t border-ink/[0.06] flex items-center justify-between text-[10.5px] text-ink/30">
-              <span>{tab === 3 ? 'Считается только опыт клана' : tab === 1 ? 'Vault / экономика сервера' : 'Топ-10 · обновляется каждые 5 минут'}</span>
+              <span>{tab === 3 ? 'Считается только опыт клана' : tab === 1 ? 'Экономика сервера' : 'Топ-10 · обновляется каждые 5 минут'}</span>
               <span className="hidden sm:inline">{tab === 3 ? 'ElytrixClans' : tab === 1 ? '/eco' : 'наведи на голову ;)'}</span>
             </div>
           </motion.div>

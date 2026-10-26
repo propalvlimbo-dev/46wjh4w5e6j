@@ -157,6 +157,22 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
         return !isAllowedByGroup(player.getUniqueId());
     }
 
+    private boolean isNonStaff(UUID uuid) {
+        if (uuid == null || luckPerms == null) return false;
+        try {
+            User user = luckPerms.getUserManager().getUser(uuid);
+            if (user == null) user = luckPerms.getUserManager().loadUser(uuid).get(3, TimeUnit.SECONDS);
+            if (user == null) return false;
+            Set<String> excluded = excludedGroups();
+            String primary = user.getPrimaryGroup() == null ? "default" : user.getPrimaryGroup().toLowerCase(Locale.ROOT);
+            if (isStaffExcluded(primary, excluded)) return false;
+            for (InheritanceNode node : user.getNodes(NodeType.INHERITANCE)) {
+                if (node != null && isStaffExcluded(node.getGroupName().toLowerCase(Locale.ROOT), excluded)) return false;
+            }
+            return true;
+        } catch (Exception ex) { return false; }
+    }
+
     private boolean isAllowedByGroup(UUID uuid) {
         if (luckPerms == null || uuid == null) return false;
         try {
@@ -450,7 +466,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
         if (economy == null || luckPerms == null) return top;
         List<JsonObject> rows = new ArrayList<>();
         for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
-            if (player == null || player.getUniqueId() == null || !isAllowedByGroup(player.getUniqueId())) continue;
+            if (player == null || player.getUniqueId() == null || !isNonStaff(player.getUniqueId())) continue;
             double balance;
             try { balance = ((Number) economy.getClass().getMethod("getBalance", OfflinePlayer.class).invoke(economy, player)).doubleValue(); } catch (Exception ignored) { continue; }
             if (balance <= 0) continue;
