@@ -185,7 +185,7 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 			Method         string `json:"method"`
 			MethodCurrency string `json:"method_currency"`
 			OptionID       int    `json:"option_id"`
-			CustomTitle    *struct { Text string `json:"text"`; Mode string `json:"mode"`; Color string `json:"color"`; Color2 string `json:"color2"`; Kind string `json:"kind,omitempty"` } `json:"custom_title"`
+			CustomTitle    *struct { Text string `json:"text"`; Mode string `json:"mode"`; Color string `json:"color"`; Color2 string `json:"color2"`; Kind string `json:"kind,omitempty"`; Bold bool `json:"bold,omitempty"`; Italic bool `json:"italic,omitempty"`; Underline bool `json:"underline,omitempty"`; Strikethrough bool `json:"strikethrough,omitempty"` } `json:"custom_title"`
 		}
 		if err := c.BodyParser(&body); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "bad body"})

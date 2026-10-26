@@ -8,6 +8,10 @@ export type TitleStyle = {
   mode: 'gradient' | 'solid'
   color: string
   color2: string
+  bold: boolean
+  italic: boolean
+  underline: boolean
+  strikethrough: boolean
 }
 
 const SAFE_TITLE = /^[А-Яа-яЁёA-Za-z0-9]*$/
@@ -47,6 +51,11 @@ export default function TitleCustomizer({
   const titlePreview = useMemo(() => value.mode === 'gradient'
     ? gradientText(value.text || 'Титул', value.color, value.color2)
     : <span style={{ color: value.color }}>{value.text || 'Титул'}</span>, [value])
+  const titleTextStyle = {
+    fontWeight: value.bold ? 800 : 400,
+    fontStyle: value.italic ? 'italic' as const : 'normal' as const,
+    textDecoration: [value.underline ? 'underline' : '', value.strikethrough ? 'line-through' : ''].filter(Boolean).join(' ') || 'none',
+  }
 
   const update = (patch: Partial<TitleStyle>) => onChange({ ...value, ...patch })
 
@@ -81,6 +90,25 @@ export default function TitleCustomizer({
         <button type="button" onClick={() => update({ mode: 'solid' })} className={`rounded-lg border px-2 py-2 text-xs font-semibold transition ${value.mode === 'solid' ? 'border-pink bg-pink-soft/30 text-pink-deep' : 'border-pink-soft/60 text-ink/70 hover:border-pink'}`}>Обычный</button>
       </div>
 
+      <div className="flex items-center gap-1.5">
+        {([
+          ['bold', 'B', 'Жирный'],
+          ['italic', 'I', 'Курсив'],
+          ['underline', 'U', 'Подчёркнутый'],
+          ['strikethrough', 'S', 'Зачёркнутый'],
+        ] as const).map(([key, label, hint]) => (
+          <button
+            key={key}
+            type="button"
+            title={`${hint} (${key === 'bold' ? '&l' : key === 'italic' ? '&o' : key === 'underline' ? '&n' : '&m'})`}
+            onClick={() => update({ [key]: !value[key] } as Partial<TitleStyle>)}
+            className={`h-8 min-w-8 rounded-lg border px-2 text-xs transition ${value[key] ? 'border-pink bg-pink text-white' : 'border-pink-soft/60 bg-white/60 text-ink/65 hover:border-pink'}`}
+            style={{ fontWeight: key === 'bold' ? 800 : 600, fontStyle: key === 'italic' ? 'italic' : 'normal', textDecoration: key === 'underline' ? 'underline' : key === 'strikethrough' ? 'line-through' : 'none' }}
+          >{label}</button>
+        ))}
+        <span className="ml-1 text-[10px] text-ink/40">форматирование</span>
+      </div>
+
       <div className={`grid gap-3 ${value.mode === 'gradient' ? 'grid-cols-2' : 'grid-cols-1'}`}>
         <label className="text-[11px] text-ink/50">Цвет 1<input type="color" value={value.color} onChange={e => update({ color: e.target.value })} className="mt-1 h-9 w-full cursor-pointer rounded-lg border-0 bg-transparent" /></label>
         {value.mode === 'gradient' && <label className="text-[11px] text-ink/50">Цвет 2<input type="color" value={value.color2} onChange={e => update({ color2: e.target.value })} className="mt-1 h-9 w-full cursor-pointer rounded-lg border-0 bg-transparent" /></label>}
@@ -92,9 +120,9 @@ export default function TitleCustomizer({
         <div className="relative z-10">
           <div className="mb-4 text-[10px] uppercase tracking-wider text-white/55">Предпросмотр чата</div>
           <div className="font-minecraft text-[13px] leading-6 font-bold [text-shadow:2px_2px_0_#000,-1px_0_0_#000]">
-            {isDonate && <><span className="font-minecraft font-black tracking-wide [paint-order:stroke_fill] [-webkit-text-stroke:1px_#09090b] [text-shadow:2px_2px_0_#09090b,-1px_0_0_#09090b]">{titlePreview}</span>{' '}</>}
+            {isDonate && <><span style={titleTextStyle} className="font-minecraft font-black tracking-wide [paint-order:stroke_fill] [-webkit-text-stroke:1px_#09090b] [text-shadow:2px_2px_0_#09090b,-1px_0_0_#09090b]">{titlePreview}</span>{' '}</>}
             <span className="text-white">{player || 'Player'}</span>{' '}
-            {!isDonate && <span className="font-minecraft font-black tracking-wide [paint-order:stroke_fill] [-webkit-text-stroke:1px_#09090b] [text-shadow:2px_2px_0_#09090b,-1px_0_0_#09090b]">{titlePreview}</span>}
+            {!isDonate && <span style={titleTextStyle} className="font-minecraft font-black tracking-wide [paint-order:stroke_fill] [-webkit-text-stroke:1px_#09090b] [text-shadow:2px_2px_0_#09090b,-1px_0_0_#09090b]">{titlePreview}</span>}
             <span className="text-white/90">: сообщение</span>
           </div>
         </div>

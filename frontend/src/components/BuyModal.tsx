@@ -92,7 +92,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   const [coinRubles, setCoinRubles] = useState<number>(Math.min(COIN_MAX_RUB, Math.max(COIN_MIN_RUB, Number(product?.coinRubles || 100))))
   const [optionId, setOptionId] = useState<number>(options[0]?.id || 0)
   const [name, setName] = useState('')
-  const [titleStyle, setTitleStyle] = useState<TitleStyle>({ text: '', mode: 'gradient', color: '#f05a9a', color2: '#ff9bc5' })
+  const [titleStyle, setTitleStyle] = useState<TitleStyle>({ text: '', mode: 'gradient', color: '#f05a9a', color2: '#ff9bc5', bold: false, italic: false, underline: false, strikethrough: false })
   const [titleCustomizerOpen, setTitleCustomizerOpen] = useState(false)
   const [titleConfigured, setTitleConfigured] = useState(false)
   const [promo, setPromo] = useState('')

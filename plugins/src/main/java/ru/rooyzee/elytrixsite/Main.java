@@ -271,7 +271,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
         return out.toString();
     }
 
-    private String gradientTitle(String text, String first, String second) {
+    private String gradientTitle(String text, String first, String second, String formats) {
         if (text == null || text.isEmpty()) return "";
         try {
             int r1 = Integer.parseInt(first.substring(1, 3), 16), g1 = Integer.parseInt(first.substring(3, 5), 16), b1 = Integer.parseInt(first.substring(5, 7), 16);
@@ -282,7 +282,7 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
                 int cp = text.codePointAt(offset);
                 double t = count <= 1 ? 0 : (double) index / (count - 1);
                 String hex = String.format("#%02x%02x%02x", Math.round(r1 + (r2 - r1) * t), Math.round(g1 + (g2 - g1) * t), Math.round(b1 + (b2 - b1) * t));
-                out.append(titleColor(hex)).appendCodePoint(cp);
+                out.append(titleColor(hex)).append(formats).appendCodePoint(cp);
                 offset += Character.charCount(cp); index++;
             }
             return out.toString();
@@ -297,7 +297,13 @@ public final class Main extends JavaPlugin implements Listener, CommandExecutor 
             String mode = title.get("mode").getAsString();
             String color = title.get("color").getAsString();
             String color2 = title.get("color2").getAsString();
-            String styled = "solid".equals(mode) ? titleColor(color) + text : gradientTitle(text, color, color2);
+            StringBuilder formatsBuilder = new StringBuilder();
+            if (title.has("bold") && title.get("bold").getAsBoolean()) formatsBuilder.append("§l");
+            if (title.has("italic") && title.get("italic").getAsBoolean()) formatsBuilder.append("§o");
+            if (title.has("underline") && title.get("underline").getAsBoolean()) formatsBuilder.append("§n");
+            if (title.has("strikethrough") && title.get("strikethrough").getAsBoolean()) formatsBuilder.append("§m");
+            String formats = formatsBuilder.toString();
+            String styled = "solid".equals(mode) ? titleColor(color) + formats + text : gradientTitle(text, color, color2, formats);
             boolean donatePrefix = title.has("kind") && "donate".equals(title.get("kind").getAsString());
             String prefix = styled + "§r ";
             String suffix = " §r" + styled + "§r";
