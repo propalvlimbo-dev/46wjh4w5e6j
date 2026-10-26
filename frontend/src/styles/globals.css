@@ -162,37 +162,37 @@ input, textarea {
 
 .halloween-moon {
   position: absolute;
-  top: 7rem;
-  right: 7vw;
-  width: 54px;
-  height: 54px;
+  top: 6rem;
+  right: 8vw;
+  width: 58px;
+  height: 58px;
   border-radius: 999px;
-  background: rgba(255, 185, 107, 0.16);
-  box-shadow: 0 0 42px rgba(255, 146, 87, 0.18);
+  background: rgba(255, 169, 91, 0.3);
+  box-shadow: 0 0 54px rgba(255, 125, 74, 0.28);
 }
 
 .halloween-ghost {
   position: absolute;
-  color: #d98bba;
-  opacity: 0.22;
-  filter: drop-shadow(0 5px 12px rgba(190, 84, 141, 0.15));
+  color: #ed6fa9;
+  opacity: 0.66;
+  filter: drop-shadow(0 7px 14px rgba(190, 84, 141, 0.25));
   animation: halloween-float 15s ease-in-out infinite;
 }
 
 .halloween-ghost svg {
   display: block;
-  width: 58px;
-  height: 58px;
-  fill: rgba(255, 239, 247, 0.7);
+  width: 72px;
+  height: 72px;
+  fill: rgba(255, 238, 247, 0.95);
 }
 
-.halloween-ghost-one { top: 22%; left: -2rem; animation-delay: -2s; }
+.halloween-ghost-one { top: 18%; left: 10%; animation-delay: -2s; }
 .halloween-ghost-two {
-  top: 48%; right: 1.8rem; transform: scale(0.68); opacity: 0.16;
+  top: 43%; right: 10%; transform: scale(0.78); opacity: 0.52;
   animation-name: halloween-float-small; animation-duration: 18s; animation-delay: -9s;
 }
 .halloween-ghost-three {
-  top: 76%; left: 19%; transform: scale(0.46); opacity: 0.12;
+  top: 72%; left: 34%; transform: scale(0.58); opacity: 0.42;
   animation-name: halloween-float-tiny; animation-duration: 21s; animation-delay: -13s;
 }
 
@@ -223,10 +223,10 @@ input, textarea {
 }
 
 @media (max-width: 640px) {
-  .halloween-moon { top: 6rem; right: 1.5rem; width: 42px; height: 42px; }
-  .halloween-ghost-one { top: 24%; left: -1.5rem; }
-  .halloween-ghost-two { right: -1rem; }
-  .halloween-ghost-three { left: 8%; }
+  .halloween-moon { top: 5rem; right: 1.5rem; width: 46px; height: 46px; }
+  .halloween-ghost-one { top: 20%; left: 7%; }
+  .halloween-ghost-two { top: 45%; right: 5%; }
+  .halloween-ghost-three { top: 74%; left: 27%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .halloween-ghost, .halloween-spark { animation: none; }
