@@ -111,7 +111,7 @@ export default function Products() {
     fetch('/safdjuhos8dfuahj/settings', { credentials: 'include' }).then(r => r.json()).then(d => setActiveStore(d?.active_store || 'main'))
   }
   const switchStore = async (store: string) => {
-    await api('/settings', { method: 'POST', body: JSON.stringify({ key: 'active_store', value: store }) })
+    await api('/api/settings', { method: 'POST', body: JSON.stringify({ key: 'active_store', value: store }) })
     setActiveStore(store)
     load()
   }
