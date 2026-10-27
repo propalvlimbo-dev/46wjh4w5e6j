@@ -3,6 +3,7 @@ package models
 type Product struct {
 	ID          int             `json:"id"`
 	CategoryID  int             `json:"category_id"`
+	StoreKey    string          `json:"store_key"`
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	Image       string          `json:"image"`

@@ -243,7 +243,7 @@ func CreatePayment(cfg *config.Config) fiber.Handler {
 		var price int
 		var productName string
 		err = tx.QueryRow(ctx,
-			`SELECT price, name FROM products WHERE id=$1 AND active=TRUE`, body.ProductID).
+			`SELECT price, name FROM products WHERE id=$1 AND active=TRUE AND store_key=COALESCE((SELECT value FROM settings WHERE key='active_store'),'main')`, body.ProductID).
 			Scan(&price, &productName)
 		baseProductName := productName
 		if err != nil {

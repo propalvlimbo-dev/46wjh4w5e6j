@@ -26,6 +26,7 @@ func migrate() error {
 	CREATE TABLE IF NOT EXISTS products(
 		id SERIAL PRIMARY KEY,
 		category_id INT REFERENCES categories(id) ON DELETE CASCADE,
+		store_key TEXT NOT NULL DEFAULT 'main',
 		name TEXT NOT NULL,
 		description TEXT DEFAULT '',
 		image TEXT DEFAULT '',
@@ -48,6 +49,7 @@ func migrate() error {
 		paid_at TIMESTAMPTZ,
 		issued_at TIMESTAMPTZ
 	);
+	ALTER TABLE products ADD COLUMN IF NOT EXISTS store_key TEXT NOT NULL DEFAULT 'main';
 	ALTER TABLE orders ADD COLUMN IF NOT EXISTS pay_num BIGSERIAL UNIQUE;
 	ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_code TEXT DEFAULT '';
 	ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_id TEXT DEFAULT '';
@@ -137,6 +139,7 @@ func migrate() error {
 	ALTER TABLE product_options ADD COLUMN IF NOT EXISTS duration_text TEXT NOT NULL DEFAULT '';
 	UPDATE product_options SET duration_hours=days*24, dur=days::text||'d', duration_text=days::text||' дней'
 		WHERE days>0 AND duration_hours=0;
+	INSERT INTO settings(key,value) VALUES('active_store','main') ON CONFLICT DO NOTHING;
 	INSERT INTO settings(key,value) VALUES('test_mode','false') ON CONFLICT DO NOTHING;
 	INSERT INTO settings(key,value) VALUES('maintenance_until','') ON CONFLICT DO NOTHING;
 	INSERT INTO settings(key,value) VALUES('allowed_ips','') ON CONFLICT DO NOTHING;

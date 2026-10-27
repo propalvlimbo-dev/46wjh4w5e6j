@@ -175,7 +175,7 @@ func AdminCreateProduct(c *fiber.Ctx) error {
 	}
 	defer tx.Rollback(ctx)
 	var newID int
-	err = tx.QueryRow(ctx, `INSERT INTO products(category_id,name,description,image,info_image,price,commands) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+	err = tx.QueryRow(ctx, `INSERT INTO products(category_id,store_key,name,description,image,info_image,price,commands) SELECT $1,COALESCE((SELECT value FROM settings WHERE key='active_store'),'main'),$2,$3,$4,$5,$6,$7 RETURNING id`,
 		p.CategoryID, p.Name, p.Description, p.Image, p.InfoImage, p.Price, p.Commands).Scan(&newID)
 	if err != nil {
 		return c.Status(500).SendString(err.Error())

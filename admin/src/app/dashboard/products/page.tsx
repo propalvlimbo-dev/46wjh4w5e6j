@@ -103,10 +103,17 @@ export default function Products() {
   const [editId, setEditId] = useState<number | null>(null)
   const [uploading, setUploading] = useState(false)
   const [cmdOpen, setCmdOpen] = useState<boolean[]>([])
+  const [activeStore, setActiveStore] = useState('main')
 
   const load = () => {
     fetch('/safdjuhos8dfuahj/products', { credentials: 'include' }).then(r => r.json()).then(d => setList(d || []))
     fetch('/safdjuhos8dfuahj/categories', { credentials: 'include' }).then(r => r.json()).then(d => setCats(d || []))
+    fetch('/safdjuhos8dfuahj/settings', { credentials: 'include' }).then(r => r.json()).then(d => setActiveStore(d?.active_store || 'main'))
+  }
+  const switchStore = async (store: string) => {
+    await api('/settings', { method: 'POST', body: JSON.stringify({ key: 'active_store', value: store }) })
+    setActiveStore(store)
+    load()
   }
   useEffect(() => { load() }, [])
 
@@ -198,8 +205,18 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-semibold">Товары</h1>
+      <div className="flex flex-wrap gap-3 justify-between items-center">
+        <div>
+          <h1 className="text-xl font-semibold">Товары</h1>
+          <div className="text-xs text-muted mt-1">Активный магазин: {activeStore === 'main' ? 'Основной сервер' : 'Новый сервер'}</div>
+        </div>
+        <div className="flex items-center gap-1 rounded-xl border border-border bg-bg p-1">
+          {([['main', 'Основной сервер'], ['secondary', 'Новый сервер']] as const).map(([key, label]) => (
+            <button key={key} onClick={() => switchStore(key)} className={`px-3 py-1.5 rounded-lg text-xs transition ${activeStore === key ? 'bg-pink text-white' : 'text-muted hover:text-text'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
         <button onClick={() => { setForm({ ...empty }); setEditId(null); setCmdOpen([]); setOpen(true) }} className="btn btn-primary">
           <Plus size={14} /> Добавить
         </button>

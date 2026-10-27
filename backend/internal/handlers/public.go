@@ -75,7 +75,7 @@ func attachOptions(list []models.Product, forAdmin bool) {
 
 func GetProducts(c *fiber.Ctx) error {
 	rows, err := db.Pool.Query(context.Background(),
-		`SELECT id,category_id,name,description,image,info_image,price,commands,sort,active FROM products WHERE active=TRUE ORDER BY sort ASC, price DESC`)
+		`SELECT id,category_id,store_key,name,description,image,info_image,price,commands,sort,active FROM products WHERE active=TRUE AND store_key=COALESCE((SELECT value FROM settings WHERE key='active_store'),'main') ORDER BY sort ASC, price DESC`)
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
@@ -83,7 +83,7 @@ func GetProducts(c *fiber.Ctx) error {
 	list := []models.Product{}
 	for rows.Next() {
 		var p models.Product
-		rows.Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Image, &p.InfoImage, &p.Price, &p.Commands, &p.Sort, &p.Active)
+		rows.Scan(&p.ID, &p.CategoryID, &p.StoreKey, &p.Name, &p.Description, &p.Image, &p.InfoImage, &p.Price, &p.Commands, &p.Sort, &p.Active)
 		list = append(list, p)
 	}
 	attachOptions(list, false)
@@ -92,7 +92,7 @@ func GetProducts(c *fiber.Ctx) error {
 
 func AdminGetAllProducts(c *fiber.Ctx) error {
 	rows, err := db.Pool.Query(context.Background(),
-		`SELECT id,category_id,name,description,image,info_image,price,commands,sort,active FROM products ORDER BY sort ASC, price DESC`)
+		`SELECT id,category_id,store_key,name,description,image,info_image,price,commands,sort,active FROM products WHERE store_key=COALESCE((SELECT value FROM settings WHERE key='active_store'),'main') ORDER BY sort ASC, price DESC`)
 	if err != nil {
 		return c.Status(500).SendString(err.Error())
 	}
@@ -100,7 +100,7 @@ func AdminGetAllProducts(c *fiber.Ctx) error {
 	list := []models.Product{}
 	for rows.Next() {
 		var p models.Product
-		rows.Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Image, &p.InfoImage, &p.Price, &p.Commands, &p.Sort, &p.Active)
+		rows.Scan(&p.ID, &p.CategoryID, &p.StoreKey, &p.Name, &p.Description, &p.Image, &p.InfoImage, &p.Price, &p.Commands, &p.Sort, &p.Active)
 		list = append(list, p)
 	}
 	attachOptions(list, true)
