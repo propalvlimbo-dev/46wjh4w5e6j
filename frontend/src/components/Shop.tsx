@@ -12,7 +12,7 @@ type Category = { id: number; name: string }
 type Product = {
   id: number; category_id: number; name: string; description: string
   image: string; info_image?: string; price: number; options?: ProductOption[]
-  isCoins?: boolean; coinRubles?: number
+  isCoins?: boolean; coinRubles?: number; currencyRate?: number
 }
 
 const COINS_CATEGORY_ID = -1
