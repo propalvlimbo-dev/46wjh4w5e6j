@@ -33,7 +33,6 @@ const CRYPTO_METHODS: MethodDef[] = [
 ]
 
 const ALL_METHODS = [...MAIN_METHODS, ...FOREIGN_CARD_METHODS, ...CRYPTO_METHODS]
-const COIN_RATE = 10
 const COIN_MIN_RUB = 1
 const COIN_MAX_RUB = 6000
 const FUNPAY_URL = 'https://funpay.com/users/7785488/'
@@ -82,7 +81,7 @@ type PayInfo = {
   payment_data?: any
 }
 
-export default function BuyModal({ product, onClose }: { product: any; onClose: () => void }) {
+export default function BuyModal({ product, currencyName = 'Коины', currencyRate = 10, onClose }: { product: any; currencyName?: string; currencyRate?: number; onClose: () => void }) {
   const isCoins = !!product?.isCoins
   const isCustomTitle = product?.name === 'Свой Титул'
   const isCustomDonate = product?.name === 'КАСТОМНЫЙ'
@@ -181,7 +180,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
   }, [step, pay])
 
   const selOpt = options.find(o => o.id === optionId) || options[0]
-  const coinAmount = coinRubles * COIN_RATE
+  const coinAmount = coinRubles * currencyRate
   const basePrice = isCoins ? coinRubles : (selectable && selOpt ? selOpt.price : product.price)
   const finalPrice = !isCoins && promoState.ok && promoState.discount ? Math.floor(basePrice * (100 - promoState.discount) / 100) : basePrice
   const optionLabel = selectable && selOpt ? selOpt.label : ''
@@ -284,7 +283,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                         <div className="text-sm text-ink/40 line-through">{basePrice} ₽</div>
                       )}
                       {isCoins ? (
-                        <div className="text-xs text-ink/50 font-medium">/ {coinAmount} коинов</div>
+                        <div className="text-xs text-ink/50 font-medium">/ {coinAmount} {currencyName}</div>
                       ) : optionLabel && (
                         <div className="text-xs text-ink/50 font-medium">/ {optionLabel.toLowerCase()}</div>
                       )}
@@ -319,8 +318,8 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                 {isCoins && (
                   <div className="mb-4 shrink-0 bg-white/75 rounded-2xl p-3.5 border border-pink-soft/40">
                     <div className="flex items-center justify-between gap-3 mb-2.5">
-                      <div className="text-xs text-ink/50">Курс: <b className="text-ink/70">1 ₽ = {COIN_RATE}</b></div>
-                      <div className="text-xs text-pink-deep font-semibold">{coinAmount} коинов</div>
+                      <div className="text-xs text-ink/50">Курс: <b className="text-ink/70">1 ₽ = {currencyRate} {currencyName}</b></div>
+                      <div className="text-xs text-pink-deep font-semibold">{coinAmount} {currencyName}</div>
                     </div>
                     <input
                       type="range"
@@ -350,14 +349,14 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                         <div className="mt-1 flex items-center rounded-xl border border-pink-soft/60 bg-pink-soft/15 overflow-hidden">
                           <input
                             type="number"
-                            min={COIN_RATE}
-                            max={COIN_MAX_RUB * COIN_RATE}
-                            step={COIN_RATE}
+                            min={currencyRate}
+                            max={COIN_MAX_RUB * currencyRate}
+                            step={currencyRate}
                             value={coinAmount}
-                            onChange={e => setCoinAmountRub(Math.ceil(Number(e.target.value) / COIN_RATE))}
+                            onChange={e => setCoinAmountRub(Math.ceil(Number(e.target.value) / currencyRate))}
                             className="min-w-0 w-full px-3 py-2 outline-none font-bold bg-transparent text-sm sm:text-base"
                           />
-                          <span className="pr-3 text-ink/45 font-semibold text-xs sm:text-sm">коинов</span>
+                          <span className="pr-3 text-ink/45 font-semibold text-xs sm:text-sm">{currencyName}</span>
                         </div>
                       </label>
                     </div>
@@ -376,7 +375,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                     className="allow-select text-sm text-ink/70 leading-relaxed whitespace-pre-line overflow-y-auto modal-scroll flex-1 pr-1 min-h-0"
                   >
                     {isCoins ? (
-                      <>Коины выдаются автоматически после оплаты.<br />Сейчас выбрано: <b>{coinAmount} коинов</b> за <b>{coinRubles} ₽</b>.</>
+                      <>{currencyName} выдаются автоматически после оплаты.<br />Сейчас выбрано: <b>{coinAmount} {currencyName}</b> за <b>{coinRubles} ₽</b>.</>
                     ) : (() => {
                       const rest = (product.description || '').split('\n').slice(1).join('\n').trim()
                       return rest ? colorize(rest) : 'Покупка выдаётся на сервере сразу после оплаты.'
@@ -489,7 +488,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
           {step === 'pay' && pay && (
             <div className="p-6 sm:p-8 flex flex-col items-center justify-center text-center overflow-y-auto modal-scroll" data-lenis-prevent>
               <div className="text-xs text-ink/50 uppercase tracking-wider mb-2">Оплата</div>
-              <div className="font-display text-xl sm:text-2xl leading-tight mb-1">{product.name}{isCoins ? ` · ${pay.coins || coinAmount} коинов` : optionLabel ? ` · ${optionLabel}` : ''}</div>
+              <div className="font-display text-xl sm:text-2xl leading-tight mb-1">{product.name}{isCoins ? ` · ${pay.coins || coinAmount} ${currencyName}` : optionLabel ? ` · ${optionLabel}` : ''}</div>
               <div className="text-pink font-bold text-2xl mb-5">{pay.amount} ₽</div>
 
               {!directPay && (
@@ -567,7 +566,7 @@ export default function BuyModal({ product, onClose }: { product: any; onClose: 
                 </div>
                 {isCoins && (
                   <div className="flex justify-between mb-2">
-                    <span className="text-ink/50">Коины</span>
+                    <span className="text-ink/50">{currencyName}</span>
                     <span className="font-medium">{pay?.coins || coinAmount}</span>
                   </div>
                 )}

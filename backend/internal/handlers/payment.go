@@ -425,6 +425,13 @@ func validMinecraftName(name string) bool {
 }
 
 func coinsRate(cfg *config.Config) int {
+	var store string
+	if db.Pool != nil {
+		_ = db.Pool.QueryRow(context.Background(), `SELECT COALESCE((SELECT value FROM settings WHERE key='active_store'),'main')`).Scan(&store)
+	}
+	if store == "secondary" {
+		return 50
+	}
 	rate, err := strconv.Atoi(strings.TrimSpace(cfg.CoinsRate))
 	if err != nil || rate <= 0 {
 		return 10

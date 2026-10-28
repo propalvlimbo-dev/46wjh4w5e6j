@@ -107,6 +107,17 @@ func AdminGetAllProducts(c *fiber.Ctx) error {
 	return c.JSON(list)
 }
 
+func GetStoreConfig(c *fiber.Ctx) error {
+	var store string
+	if err := db.Pool.QueryRow(context.Background(), `SELECT COALESCE((SELECT value FROM settings WHERE key='active_store'),'main')`).Scan(&store); err != nil {
+		store = "main"
+	}
+	if store == "secondary" {
+		return c.JSON(fiber.Map{"store": store, "currency_name": "Риллики", "currency_rate": 50})
+	}
+	return c.JSON(fiber.Map{"store": "main", "currency_name": "Коины", "currency_rate": 10})
+}
+
 func GetCategories(c *fiber.Ctx) error {
 	rows, err := db.Pool.Query(context.Background(), `SELECT id,name,sort FROM categories ORDER BY sort, id`)
 	if err != nil {

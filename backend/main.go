@@ -27,6 +27,7 @@ func main() {
 	api.Get("/maintenance", handlers.CheckMaintenance(cfg))
 	api.Get("/products", handlers.GetProducts)
 	api.Get("/categories", handlers.GetCategories)
+	api.Get("/store-config", handlers.GetStoreConfig)
 	api.Get("/check-player", middleware.RateLimit("check", 20, time.Minute), handlers.CheckPlayer(cfg))
 	api.Get("/check-promo", middleware.RateLimit("promo", 20, time.Minute), handlers.CheckPromo)
 	api.Post("/create-payment", middleware.RateLimit("pay", 10, time.Minute), handlers.CreatePayment(cfg))
